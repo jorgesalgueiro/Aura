@@ -1,0 +1,45 @@
+# Publica o Aura no GitHub Pages a cada push para `main`.
+#
+# Antes: repositório → Settings → Pages → Source: "GitHub Actions".
+# O sítio fica em https://<utilizador>.github.io/<repositório>/ — com HTTPS,
+# portanto instalável no iPhone pelo Safari.
+
+name: Publicar
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Construir os pacotes
+        run: node tools/empacotar.mjs
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/site
+
+      - name: Publicar
+        id: deploy
+        uses: actions/deploy-pages@v4

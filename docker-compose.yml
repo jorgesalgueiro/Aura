@@ -1,0 +1,8 @@
+services:
+  aura:
+    build: .
+    image: aura-health-journal:latest
+    container_name: aura
+    ports:
+      - "8080:80"
+    restart: unless-stopped

@@ -1,0 +1,118 @@
+/* ==========================================================================
+   print.css — impressão e exportação em PDF (Ecrã 6: "exportar para o médico")
+   --------------------------------------------------------------------------
+   com media="print" no index.html. Converte o tema escuro para papel branco,
+   esconde a interface de navegação e evita partir cartões a meio da página.
+   ========================================================================== */
+
+@page {
+  size: A4;
+  margin: 14mm 12mm 16mm;
+}
+
+@media print {
+  :root {
+    --bg-0: #ffffff;
+    --bg-1: #ffffff;
+    --bg-2: #f4f6fa;
+    --surface: #f5f7fb;
+    --surface-2: #eef1f7;
+    --surface-3: #e6eaf2;
+    --stroke: #d6dce7;
+    --stroke-strong: #b9c2d1;
+    --text: #101623;
+    --text-2: #46536a;
+    --text-3: #6d7c94;
+    --grad-card: linear-gradient(160deg, #ffffff, #f7f9fc);
+    --shadow-pop: none;
+  }
+
+  html, body {
+    background: #fff !important;
+    color: #101623 !important;
+    font-size: 11.5pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* tudo o que é chrome de app desaparece */
+  #topbar, #tabbar, #sheet-root, #toast-root, .scrim, .sheet,
+  .btn, .btn-row, .segmented, .chips, .quick, .icon-btn, .pill,
+  .chev, .no-print, [data-acao], [data-navega] {
+    display: none !important;
+  }
+
+  #app { display: block !important; height: auto !important; }
+  #view {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .fade-in { animation: none !important; }
+
+  /* cabeçalho do relatório */
+  #view::before {
+    content: "Aura Health Journal — relatório para o médico";
+    display: block;
+    font-size: 9pt;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: #6d7c94;
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #d6dce7;
+  }
+
+  .screen-head { margin-bottom: 12px !important; }
+  .screen-title { font-size: 17pt !important; color: #101623 !important; }
+  .screen-kicker, .screen-sub { color: #46536a !important; }
+
+  /* os títulos com gradiente usam texto transparente: sem as cores de fundo
+     impressas ficavam invisíveis no papel — passam a tinta sólida escura. */
+  .screen-title, .timer-live {
+    background: none !important;
+    -webkit-text-fill-color: #101623 !important;
+    color: #101623 !important;
+  }
+
+  /* campos de formulário: o fundo escuro translúcido fica um cinzento
+     ilegível sobre o papel branco; a seta do <select> também escurece.
+     Usa-se background-color (não o shorthand) para não desfazer o
+     repeat/position/size da seta definida em app.css. */
+  input, textarea, select {
+    background-color: #fff !important;
+    color: #101623 !important;
+    border-color: #b9c2d1 !important;
+    color-scheme: light !important;
+  }
+  select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2346536a' stroke-width='2' stroke-linecap='round'><path d='m6 9 6 6 6-6'/></svg>") !important;
+  }
+
+  .card, .stat, .section, .list > .row, .tl-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border-color: #d6dce7 !important;
+  }
+  .section { margin-top: 16px !important; }
+  .section-title { break-after: avoid; page-break-after: avoid; }
+  .chart { overflow: visible !important; break-inside: avoid; page-break-inside: avoid; }
+  .chart svg { max-width: 100%; }
+
+  /* cores fixas em branco que a app define com alpha */
+  .grid-lne { stroke: #e2e7ef !important; }
+  .axis-lbl { fill: #6d7c94 !important; }
+  .bar, .corr-track, .track { background: #eef1f7 !important; border-color: #d6dce7 !important; }
+  .ring .ring-bg { stroke: #e2e7ef !important; }
+  .zone path, .zone ellipse { stroke: #c3ccda !important; fill: #f5f7fb !important; }
+  .zone-label { fill: #46536a !important; }
+  .tl-item::before { background: #fff !important; }
+  .empty { color: #6d7c94 !important; }
+  .note { background: #f5f7fb !important; border-color: #d6dce7 !important; }
+  .kv { border-color: #eceff5 !important; }
+
+  a { text-decoration: none; color: inherit; }
+}

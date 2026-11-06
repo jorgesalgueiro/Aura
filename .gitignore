@@ -1,0 +1,7 @@
+# artefactos de publicação
+dist/
+
+# sistema
+.DS_Store
+Thumbs.db
+node_modules/

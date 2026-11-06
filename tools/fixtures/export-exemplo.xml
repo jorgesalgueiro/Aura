@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE HealthData [
+<!-- Ficheiro de exemplo para testar a importação do Aura Health Journal.
+     Não é um export.xml real do iPhone: é uma amostra pequena, com os tipos
+     que a app sabe ler, para se poder verificar o analisador sem exportar
+     centenas de megabytes. As datas estão nos últimos 400 dias. -->
+]>
+<HealthData locale="pt_PT" calendarIdentifier="COMPANY">
+  <Record type="HKQuantityTypeIdentifierStepCount" startDate="2026-10-05 08:12:03 -0100" endDate="2026-10-05 08:14:22 -0100" sourceName="iPhone" quantity="2140" unit="count"/>
+  <Record type="HKQuantityTypeIdentifierStepCount" startDate="2026-10-05 13:02:11 -0100" endDate="2026-10-05 13:05:40 -0100" sourceName="Apple Watch" quantity="3610" unit="count"/>
+  <Record type="HKQuantityTypeIdentifierActiveEnergyBurned" startDate="2026-10-05 07:00:00 -0100" endDate="2026-10-05 18:00:00 -0100" sourceName="Apple Watch" quantity="412.5" unit="kcal"/>
+  <Record type="HKQuantityTypeIdentifierBodyMass" startDate="2026-10-05 07:02:00 -0100" endDate="2026-10-05 07:02:00 -0100" sourceName="Garmin Connect" quantity="73.1" unit="kg"/>
+  <Record type="HKQuantityTypeIdentifierBodyMass" startDate="2026-10-05 22:41:00 -0100" endDate="2026-10-05 22:41:00 -0100" sourceName="Withings" quantity="72.6" unit="kg"/>
+  <Record type="HKQuantityTypeIdentifierHeartRateVariabilitySDNN" startDate="2026-10-05 03:10:00 -0100" endDate="2026-10-05 03:10:00 -0100" sourceName="Apple Watch" quantity="58" unit="ms"/>
+  <Record type="HKQuantityTypeIdentifierHeartRateVariabilitySDNN" startDate="2026-10-05 04:40:00 -0100" endDate="2026-10-05 04:40:00 -0100" sourceName="Apple Watch" quantity="72" unit="ms"/>
+  <Record type="HKCategoryTypeIdentifierSleepAnalysis" startDate="2026-10-04 23:20:00 -0100" endDate="2026-10-05 01:05:00 -0100" sourceName="Apple Watch" value="HKCategoryValueSleepAnalysisAsleepCore"/>
+  <Record type="HKCategoryTypeIdentifierSleepAnalysis" startDate="2026-10-05 01:05:00 -0100" endDate="2026-10-05 02:35:00 -0100" sourceName="Apple Watch" value="HKCategoryValueSleepAnalysisAsleepDeep"/>
+  <Record type="HKCategoryTypeIdentifierSleepAnalysis" startDate="2026-10-05 02:35:00 -0100" endDate="2026-10-05 04:10:00 -0100" sourceName="Apple Watch" value="HKCategoryValueSleepAnalysisAsleepREM"/>
+  <Record type="HKCategoryTypeIdentifierSleepAnalysis" startDate="2026-10-05 04:10:00 -0100" endDate="2026-10-05 06:40:00 -0100" sourceName="Apple Watch" value="HKCategoryValueSleepAnalysisAsleepCore"/>
+  <Record type="HKCategoryTypeIdentifierSleepAnalysis" startDate="2026-10-05 06:40:00 -0100" endDate="2026-10-05 07:05:00 -0100" sourceName="Apple Watch" value="HKCategoryValueSleepAnalysisInBed"/>
+  <Record type="HKCategoryTypeIdentifierSleepAnalysis" startDate="2026-10-05 07:05:00 -0100" endDate="2026-10-05 07:20:00 -0100" sourceName="Apple Watch" value="HKCategoryValueSleepAnalysisAwake"/>
+  <Record type="HKQuantityTypeIdentifierDietaryEnergyConsumed" startDate="2026-10-05 12:30:00 -0100" endDate="2026-10-05 12:30:00 -0100" sourceName="MyFitnessPal" quantity="640" unit="kcal"/>
+  <ActivitySummary date="2026-10-05" activeEnergyBurned="455" appleExerciseTime="38" steps="9840" physicalActivityLevel="moderate"/>
+  <ActivitySummary date="2026-10-06" activeEnergyBurned="301" appleExerciseTime="22" steps="6120" physicalActivityLevel="sedentary"/>
+  <Record type="HKQuantityTypeIdentifierStepCount" startDate="2026-10-06 09:00:00 -0100" endDate="2026-10-06 09:30:00 -0100" sourceName="iPhone" quantity="6120" unit="count"/>
+</HealthData>

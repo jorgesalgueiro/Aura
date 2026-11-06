@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <title>Aura Health Journal</title>
+  <meta name="description" content="Diário de saúde e enxaquecas com correlação de pressão atmosférica.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#0B1220">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Aura">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles/app.css">
+  <link rel="stylesheet" href="styles/print.css" media="print">
+</head>
+<body>
+  <div id="offline-banner" hidden>
+    <div class="offline-inner">
+      <span class="offline-dot"></span>
+      <span>Sem ligação — a mostrar dados em cache</span>
+    </div>
+  </div>
+  <div id="ptr-indicator">
+    <span class="ptr-icon"><svg viewBox="0 0 24 24"><path d="M12 3.5v11M7.5 8.5 12 13l4.5-4.5"/><path d="M4.5 19.5h15"/></svg></span>
+    <span class="ptr-text">Puxar para atualizar</span>
+  </div>
+  <div id="app" aria-live="polite">
+    <header id="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-name">Aura <em>Health Journal</em></span>
+        </div>
+        <div class="topbar-actions">
+          <span id="sync-pill" class="pill" title="Estado dos dados de clima">a ligar…</span>
+          <button id="btn-settings" class="icon-btn" aria-label="Definições" title="Definições">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.7a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c0 .68.4 1.3 1.03 1.56H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.03Z"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="view" tabindex="-1"></main>
+
+    <nav id="tabbar" role="tablist" aria-label="Navegação principal">
+      <button class="tab" role="tab" data-tab="dashboard" aria-selected="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h3l2-3 3 6 2.5-4 1.5 1h4.5"/><path d="M20.8 10.6a5 5 0 1 0-8.8-3.2A5 5 0 1 0 3.2 10.6"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="tab" role="tab" data-tab="sintomas" aria-selected="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="13" height="17" rx="2.5"/><path d="M20 7v10.5a3 3 0 0 1-3 3H8"/><path d="M10.5 10.5v5M8 13h5"/></svg>
+        <span>Sintomas</span>
+      </button>
+      <button class="tab" role="tab" data-tab="farmacia" aria-selected="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.6" y="8.4" width="12" height="7" rx="3.5" transform="rotate(-45 8.6 11.9)"/><path d="M10.5 6.5 17 13"/><path d="M18 4.5h3.5M20 2.5v4"/></svg>
+        <span>Farmácia</span>
+      </button>
+      <button class="tab" role="tab" data-tab="relatorios" aria-selected="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="M7.5 15.5l3.5-4.5 3 2.5 4.5-6.5"/></svg>
+        <span>Relatórios</span>
+      </button>
+    </nav>
+  </div>
+
+  <div id="sheet-root"></div>
+  <div id="toast-root" role="status" aria-live="polite"></div>
+  <noscript><p style="padding:2rem;color:#fff;font-family:system-ui">O Aura Health Journal precisa de JavaScript ativo.</p></noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
