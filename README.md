@@ -439,7 +439,7 @@ aparelhos ou para inspeção; para guardar, usa a cópia encriptada.
 * **Apagar registos** limpa o diário, crises, digestivo, tomas e refeições. **Mantém a base de
   medicação e as definições** — não tens de voltar a criar a lista de comprimidos.
 
-Duas coisas que apanham muita gente:
+Três coisas que apanham muita gente:
 
 * **Cada browser e cada endereço têm dados separados.** Safari e Chrome no mesmo iPhone não
   partilham. `https://` e `http://` também não. Se mudares de endereço, exporta primeiro.
