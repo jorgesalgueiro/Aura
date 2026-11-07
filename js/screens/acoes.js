@@ -170,6 +170,9 @@ export async function sheetCrise(crise = null) {
     gatilhos: aEditar ? [...(aEditar.gatilhos || [])] : [],
     sos: aEditar ? [...(aEditar.tomaMedicacaoIds || [])] : [],
   };
+  // Só os SOS acrescentados nesta edição geram uma toma agora. Reabrir a folha
+  // de uma crise em curso não pode voltar a registar a mesma medicação.
+  const sosIniciais = new Set(estado.sos);
 
   const corpo = el(`
     <div>
@@ -301,7 +304,7 @@ export async function sheetCrise(crise = null) {
         zonas: estado.zonas, intensidade: estado.intensidade,
         gatilhos: estado.gatilhos, tomaMedicacaoIds: estado.sos, notas,
       });
-      if (emCurso) await registarSOS(estado.sos);
+      if (emCurso) await registarSOS(estado.sos.filter(id => !sosIniciais.has(id)));
     } else {
       const alvo = await iniciarCrise({ zonas: estado.zonas, intensidade: estado.intensidade, gatilhos: estado.gatilhos, notas });
       await updateCrise(alvo.id, {

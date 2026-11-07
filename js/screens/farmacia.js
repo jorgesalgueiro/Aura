@@ -44,13 +44,17 @@ async function seccaoFarmacia() {
   const itens = await farmacia();
   const tomas = await tomasDoDia(HOJE());
   const ativos = itens.filter(i => i.ativo !== false);
+  const tomou = (itemId, hora) => tomas.some(t => t.itemId === itemId && t.hora === hora);
+
   const esperadas = ativos.reduce((a, i) => a + (i.tomarAs?.length || 0), 0);
+  // A adesão só conta as tomas dos horários programados. As tomas SOS e as
+  // “+ agora” continuam na lista, mas não podem esconder uma dose em falta.
+  const cumpridas = ativos.reduce((a, i) =>
+    a + (i.tomarAs || []).filter(h => tomou(i.id, h)).length, 0);
   const feitas = tomas.length;
-  const emFalta = Math.max(0, esperadas - feitas);
+  const emFalta = Math.max(0, esperadas - cumpridas);
 
   _memoria = Object.assign(_memoria || {}, { itens, tomas });
-
-  const tomou = (itemId, hora) => tomas.some(t => t.itemId === itemId && t.hora === hora);
 
   const grupos = ['medicamento', 'suplemento'].map(cat => {
     const doGrupo = ativos.filter(i => (i.categoria || 'medicamento') === cat);
@@ -92,9 +96,9 @@ async function seccaoFarmacia() {
       <div class="split">
         <div class="center">
           <div class="ring" style="margin:2px auto 6px">
-            ${anel({ valor: feitas, total: Math.max(1, esperadas), tamanho: 116, espessura: 12 })}
-            <div class="ring-txt"><b>${esperadas ? Math.round((feitas / esperadas) * 100) + '%' : '—'}</b>
-              <small>${feitas} de ${esperadas || 0}</small></div>
+            ${anel({ valor: cumpridas, total: Math.max(1, esperadas), tamanho: 116, espessura: 12 })}
+            <div class="ring-txt"><b>${esperadas ? Math.round((cumpridas / esperadas) * 100) + '%' : '—'}</b>
+              <small>${cumpridas} de ${esperadas || 0}</small></div>
           </div>
           <div class="metric-label">Aderência de hoje</div>
         </div>

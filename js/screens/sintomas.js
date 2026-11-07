@@ -163,10 +163,13 @@ async function enxaquecas() {
   const [ativa, cs] = await Promise.all([criseAtiva(), crises(30)]);
   _memoria = Object.assign(_memoria || {}, { cs });
 
-  const findados = cs.filter(c => c.dataFim).length;
-  const mediaInt = findados ? cs.reduce((s, c) => s + (c.intensidade || 0), 0) / findados : null;
-  const mediaDur = findados
-    ? cs.reduce((s, c) => s + (c.tempoAntesMin || 0), 0) / findados / 60 : null;
+  const terminadas = cs.filter(c => c.dataFim);
+  // a média é sobre as crises terminadas; a ativa entra na lista mas ainda não
+  // tem duração — contá-la no numerador e não no divisor falseava a média
+  const mediaInt = terminadas.length
+    ? terminadas.reduce((s, c) => s + (c.intensidade || 0), 0) / terminadas.length : null;
+  const mediaDur = terminadas.length
+    ? terminadas.reduce((s, c) => s + (c.tempoAntesMin || 0), 0) / terminadas.length / 60 : null;
   const comSOS = cs.filter(c => (c.tomaMedicacaoIds || []).length).length;
 
   const lista = cs.length ? cs.map(c => `
@@ -334,17 +337,20 @@ export async function render(view) {
 /* --------------------------------------------------------------- bind --- */
 
 const ACCOES = {
-  agua: () => sheetAgua(_data), tomas: () => sheetTomas(_data), crise: () => sheetCrise(),
-  digestivo: () => sheetDigestivo(_data), refeicao: () => sheetRefeicao({ data: _data }),
-  afrontamento: () => sheetAfrontamento(_data),
+  agua: (d) => sheetAgua(d), tomas: (d) => sheetTomas(d), crise: () => sheetCrise(),
+  digestivo: (d) => sheetDigestivo(d), refeicao: (d) => sheetRefeicao({ data: d }),
+  afrontamento: (d) => sheetAfrontamento(d),
   importar: async () => { const { sheetImportar } = await import('../health-import.js'); sheetImportar(); },
 };
 
 export async function bind(root) {
   const sub = root.dataset.sub;
+  // O dia é fixado no render: um blur/change que chegue depois de trocar de dia
+  // não pode gravar no dia novo (era o bug das notas e dos deslizadores).
+  const dia = _data;
 
   on(root, 'click', '.segmented [data-sub]', (e, b) => { haptic(6); go('sintomas', b.dataset.sub); });
-  on(root, 'click', '[data-acao]', (e, b) => { const fn = ACCOES[b.dataset.acao]; if (fn) { haptic(8); fn(); } });
+  on(root, 'click', '[data-acao]', (e, b) => { const fn = ACCOES[b.dataset.acao]; if (fn) { haptic(8); fn(dia); } });
 
   on(root, 'click', '[data-dia]', (e, b) => {
     _data = b.dataset.dia;
@@ -364,18 +370,18 @@ export async function bind(root) {
   /* doenças pontuais */
   on(root, 'click', '[data-doenca]', async (e, b) => {
     const d = b.dataset.doenca;
-    const dia = await getDia(_data);
-    const atuais = new Set(dia.doencas || []);
+    const diaAtual = await getDia(dia);
+    const atuais = new Set(diaAtual.doencas || []);
     atuais.has(d) ? atuais.delete(d) : atuais.add(d);
     b.setAttribute('aria-pressed', String(atuais.has(d)));
-    await patchDia(_data, { doencas: [...atuais] });
+    await patchDia(dia, { doencas: [...atuais] });
     haptic(atuais.has(d) ? 12 : 5);
   });
 
   /* apagar um afrontamento do dia escolhido */
   on(root, 'click', '[data-del-afront]', async (e, b) => {
     if (!confirm('Apagar este afrontamento?')) return;
-    await removerAfrontamento(_data, b.dataset.delAfront);
+    await removerAfrontamento(dia, b.dataset.delAfront);
     haptic(8); toast('Afrontamento apagado'); refresh();
   });
 
@@ -392,7 +398,7 @@ export async function bind(root) {
     pintar();
     r.addEventListener('input', () => { pintar(); haptic(3); });
     r.addEventListener('change', async () => {
-      await patchDia(_data, { [campo]: +r.value });
+      await patchDia(dia, { [campo]: +r.value });
       haptic([10, 40, 10]);
       toast(`${campo === 'energia' ? 'Energia' : 'Stress'} ${r.value}/10 guardado`);
     });
@@ -402,9 +408,9 @@ export async function bind(root) {
   const notas = root.querySelector('[data-notas]');
   if (notas) {
     notas.addEventListener('blur', async () => {
-      const dia = await getDia(_data);
-      if ((dia.notas || '') === notas.value) return;
-      await patchDia(_data, { notas: notas.value });
+      const diaAtual = await getDia(dia);
+      if ((diaAtual.notas || '') === notas.value) return;
+      await patchDia(dia, { notas: notas.value });
       toast('Notas guardadas');
     });
   }

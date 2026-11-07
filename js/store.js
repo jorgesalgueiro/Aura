@@ -43,7 +43,8 @@ export function openDB() {
     };
     req.onsuccess = () => { _db = req.result; _opening = null; resolve(_db); };
     req.onerror = () => { _opening = null; reject(req.error); };
-    req.onblocked = () => reject(new Error('IndexedDB bloqueado: feche outros separadores da app.'));
+    // sem limpar _opening, a promessa rejeitada ficaria em cache até recarregar
+    req.onblocked = () => { _opening = null; reject(new Error('IndexedDB bloqueado: feche outros separadores da app.')); };
   });
   return _opening;
 }
@@ -134,6 +135,8 @@ export async function settings() {
   _settings = Object.assign({}, DEFAULT_SETTINGS, (row && row.v) || {});
   return _settings;
 }
+/** Espelho síncrono para decisões imediatas (ex.: háptica) que não podem esperar. */
+export const settingsCache = () => _settings;
 export async function saveSettings(patch) {
   const next = Object.assign(await settings(), patch);
   _settings = next;

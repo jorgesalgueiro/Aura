@@ -280,7 +280,9 @@ function analisadorCSV(nomeFicheiro = '') {
     alimentar(texto) {
       const partes = texto.split('\n');
       if (!cab) {
-        const primeira = partes.shift() || '';
+        // o Excel/Garmin escrevem BOM UTF-8: sem o remover, a coluna de data
+        // chega como "\uFEFFDate" e deixa de ser reconhecida
+        const primeira = (partes.shift() || '').replace(/^\uFEFF/, '');
         sep = detectarSeparador(primeira);
         cab = dividirLinha(primeira, sep);
         if (!cab.some(c => RE_DATA.test(c))) avisos.push('Não encontrámos uma coluna de data (Date / Dia / Activity Date).');
@@ -303,7 +305,7 @@ function analisadorCSV(nomeFicheiro = '') {
         const b = bucket(ISO(d));
         if (pesos) {
           let kg = num(a[pesos]);
-          if (kg != null && /\blb\b|pound|libra/i.test(pesos)) kg *= 0.45359237;
+          if (kg != null && /\blbs?\b|pound|libra/i.test(pesos)) kg *= 0.45359237;
           if (kg != null && kg > 2 && kg < 400) {
             if (d.getTime() >= b.pesoTs) { b.pesoKg = kg; b.pesoTs = d.getTime(); }
             campos.add('peso');
@@ -360,6 +362,9 @@ async function lerFragmentos(file, tratar, { limite = '>', progresso } = {}) {
     const corte = tudo.lastIndexOf(limite);
     if (corte === -1) {
       if (tudo.length > 48 * 1024 * 1024) throw new Error('Não encontrámos limites legíveis neste ficheiro.');
+      // sem delimitador neste fragmento, guarda-o para juntar ao seguinte
+      // (antes era descartado e o registo que caísse na fronteira perdia-se)
+      resto = tudo;
     } else {
       tratar(tudo.slice(0, corte + 1));
       resto = tudo.slice(corte + 1);
@@ -580,12 +585,18 @@ export async function sheetImportar() {
   gravar.onclick = async () => {
     if (!acumulada.size) return;
     gravar.disabled = true;
-    const n = await aplicarAnalise({ dias: acumulada, origem: meta.origem || 'importado' });
-    haptic([10, 40, 10]);
-    toast(`${n} dias importados`);
-    fechar();
-    const { refresh } = await import('./nav.js');
-    refresh();
+    try {
+      const n = await aplicarAnalise({ dias: acumulada, origem: meta.origem || 'importado' });
+      haptic([10, 40, 10]);
+      toast(`${n} dias importados`);
+      fechar();
+      const { refresh } = await import('./nav.js');
+      refresh();
+    } catch (e) {
+      // sem isto o botão ficava desativado e o erro não chegava ao utilizador
+      toast(e.message || 'Falha ao gravar a importação', 'err', 6000);
+      gravar.disabled = false;
+    }
   };
 
   return fechar;

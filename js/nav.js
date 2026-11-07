@@ -26,7 +26,8 @@ const TABS = ['dashboard', 'sintomas', 'farmacia', 'relatorios'];
 
 /** Lê "#tab/sub" — é isto que os atalhos do manifest e o Deep link escrevem. */
 export function rotaFromHash() {
-  const h = decodeURIComponent(location.hash.slice(1));
+  let h = location.hash.slice(1);
+  try { h = decodeURIComponent(h); } catch { /* hash malformado: usa o texto cru */ }
   const [tab, ...resto] = h.split('/');
   return {
     tab: TABS.includes(tab) ? tab : 'dashboard',

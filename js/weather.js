@@ -16,9 +16,19 @@ const TTL_MS = 15 * 60 * 1000;          // 15 min entre atualizações
 const chaveSerie = (lat, lon, dias) => `serie|${lat.toFixed(3)}|${lon.toFixed(3)}|${dias}`;
 
 async function json(url) {
-  const res = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!res.ok) throw new Error(`Open-Meteo HTTP ${res.status}`);
-  return res.json();
+  // sem limite, um pedido pendurado deixava o clima "a carregar" para sempre
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const res = await fetch(url, { headers: { Accept: 'application/json' }, signal: ctrl.signal });
+    if (!res.ok) throw new Error(`Open-Meteo HTTP ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('O Open-Meteo não respondeu a tempo.');
+    throw e;
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 const fmtDate = (d) => {

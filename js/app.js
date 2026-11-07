@@ -6,7 +6,7 @@ import { route, go, subscribe, rotaFromHash, refresh } from './nav.js';
 import {
   settings, saveSettings, exportarTudo, importarTudo, limparDadosPessoais, diaKey, isoOf,
 } from './store.js';
-import { el, esc, sheet, toast, ICON, on, haptic } from './utils.js';
+import { el, esc, sheet, toast, ICON, on, haptic, folhaAberta } from './utils.js';
 import { clima, atualizarClima, observarClima, estadoPill } from './clima.js';
 import { geocodar, posicaoAtual } from './weather.js';
 import { importarSaude, sheetImportar } from './health-import.js';
@@ -31,21 +31,29 @@ const ECRAS = {
 const view = document.getElementById('view');
 const pill = document.getElementById('sync-pill');
 
+/* Contador de renders: trocar de aba depressa não pode deixar um render
+   lento de uma aba antiga a substituir o ecrã da aba atual. */
+let _renderSeq = 0;
+
 /* ------------------------------------------------------------- render ---- */
 
 async function desenhar() {
   const mod = ECRAS[route.tab] || ECRAS.dashboard;
+  const seq = ++_renderSeq;
   const scroll = window.scrollY;
   view.innerHTML = `<div class="skel" style="height:120px"></div>`;
   try {
     const node = await mod.render(view);
+    if (seq !== _renderSeq) return;      // outra navegação já tomou conta do ecrã
     view.innerHTML = '';
     const host = typeof node === 'string' ? el(`<div class="fade-in">${node}</div>`) : node;
     view.appendChild(host);
     // O bind recebe o nó do ecrã (e não #view, que persiste entre rotas):
     // assim os listeners morrem com o ecrã e não se acumulam a cada render.
     if (mod.bind) await mod.bind(host);
+    if (seq !== _renderSeq) return;
   } catch (e) {
+    if (seq !== _renderSeq) return;
     view.innerHTML = `<div class="card"><h2 class="sheet-title">Algo falhou neste ecrã</h2>
       <p class="hint" style="margin-top:8px">${esc(e && e.message || e)}</p>
       <div class="btn-row mt12"><button class="btn btn-sm" data-recarregar>Tentar de novo</button></div></div>`;
@@ -87,7 +95,10 @@ window.addEventListener('hashchange', () => {
 document.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const alvo = e.target;
-  if (alvo && (alvo.matches('input, textarea, select') || alvo.isContentEditable)) return;
+  if (alvo && typeof alvo.matches === 'function'
+    && (alvo.matches('input, textarea, select') || alvo.isContentEditable)) return;
+  // com uma folha modal aberta, os números pertencem à folha (não à aba de trás)
+  if (folhaAberta()) return;
   const mapa = { '1': 'dashboard', '2': 'sintomas', '3': 'farmacia', '4': 'relatorios' };
   if (mapa[e.key]) go(mapa[e.key]);
 });
@@ -296,6 +307,7 @@ export async function sheetDefinicoes() {
     chips.querySelectorAll('[data-g]').forEach(c => c.setAttribute('aria-pressed', 'false'));
     b.setAttribute('aria-pressed', 'true');
     escolha = x;
+    corpo.querySelector('[data-loc]').value = x.nome;
     coord.textContent = `${x.lat.toFixed(3)}, ${x.lon.toFixed(3)}`;
   });
   corpo.querySelector('[data-geo-gps]').onclick = async () => {
@@ -304,6 +316,7 @@ export async function sheetDefinicoes() {
     try {
       const p = await posicaoAtual();
       escolha = Object.assign({ nome: 'A minha posição' }, p);
+      corpo.querySelector('[data-loc]').value = escolha.nome;
       coord.textContent = `${p.lat.toFixed(3)}, ${p.lon.toFixed(3)}`;
       toast('Localização obtida');
     } catch (e) { toast(e.message, 'err'); }
@@ -391,17 +404,42 @@ export async function sheetDefinicoes() {
   const fecharSheet = () => { desinscrever(); fechar(); };
 
   root.querySelector('[data-guardar]').onclick = async () => {
+    const btn = root.querySelector('[data-guardar]');
+    const escrita = corpo.querySelector('[data-loc]').value.trim();
+    let { lat, lon, nome } = escolha;
+
+    // Escreveu uma localidade mas não escolheu a sugestão: guardar o texto
+    // novo com as coordenadas antigas daria um clima da cidade errada.
+    if (escrita && escrita.toLocaleLowerCase('pt') !== String(nome || '').toLocaleLowerCase('pt')) {
+      btn.disabled = true;
+      try {
+        const r = await geocodar(escrita);
+        if (r.length) {
+          ({ lat, lon, nome } = r[0]);
+          toast(`Localidade: ${nome}`);
+        } else {
+          nome = s.localidade;
+          toast('Localidade não encontrada — coordenadas mantidas', 'warn', 5000);
+        }
+      } catch {
+        nome = s.localidade;
+        toast('Sem ligação para confirmar a localidade — coordenadas mantidas', 'warn', 5000);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
     await saveSettings({
       nome: corpo.querySelector('[data-nome]').value.trim(),
-      localidade: escolha.nome || corpo.querySelector('[data-loc]').value.trim() || s.localidade,
-      lat: escolha.lat, lon: escolha.lon,
+      localidade: nome || escrita || s.localidade,
+      lat, lon,
       objetivoAguaMl: +corpo.querySelector('[data-obj]').value || s.objetivoAguaMl,
       incrementoAguaMl: +corpo.querySelector('[data-inc]').value || 250,
       haptics: hap.getAttribute('aria-checked') === 'true',
     });
     toast('Definições guardadas');
     fechar();
-    await atualizarClima({ forcar: true, diasAtras: 45 });
+    await atualizarClima({ forcar: true, diasAtras: route.tab === 'relatorios' ? 90 : 45 });
     refresh();
   };
 }
@@ -429,7 +467,11 @@ async function arrancar() {
       sincronizar({ dias: 3 });
     }
   });
-  setInterval(() => { if (!document.hidden) atualizarClima({ diasAtras: 45 }); }, 10 * 60 * 1000);
+  setInterval(() => {
+    if (document.hidden) return;
+    // um relatório de 90 dias não pode voltar a ficar com a série de 45
+    atualizarClima({ diasAtras: route.tab === 'relatorios' ? 90 : 45 });
+  }, 10 * 60 * 1000);
 
   // instalação: o Chrome expõe beforeinstallprompt; o iOS não tem API nenhuma
   escutarInstalacao(() => { toast('Aura instalado'); refresh(); });

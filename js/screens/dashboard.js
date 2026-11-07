@@ -71,6 +71,9 @@ export async function render() {
   const refeicoesHoje = (await refeicoes(1)).filter(r => r.data === hoje);
 
   const esperadas = itens.reduce((a, i) => a + (i.tomarAs?.length || 0), 0);
+  // adesão aos horários programados (as tomas SOS ficam de fora do numerador)
+  const cumpridas = itens.reduce((a, i) =>
+    a + (i.tomarAs || []).filter(h => tomas.some(t => t.itemId === i.id && t.hora === h)).length, 0);
   const ultimas7 = await Promise.all(Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - i); return getDia(diaKey(d));
   }));
@@ -110,7 +113,7 @@ export async function render() {
       <div class="section-title">Registo rápido</div>
       <div class="grid2">
         ${atalho({ icone: 'agua', texto: 'Água', valor: `${fmt(dia.aguaMl)} ml`, accao: 'agua', vivo: dia.aguaMl > 0 && dia.aguaMl < s.objetivoAguaMl })}
-        ${atalho({ icone: 'pilula', texto: 'Medicação', valor: esperadas ? `${tomas.length}/${esperadas}` : `${tomas.length} tomas`, accao: 'tomas' })}
+        ${atalho({ icone: 'pilula', texto: 'Medicação', valor: esperadas ? `${cumpridas}/${esperadas}` : `${tomas.length} tomas`, accao: 'tomas' })}
         ${atalho({ icone: 'raio', texto: 'Iniciar crise', valor: crise ? 'em curso' : 'cronómetro', accao: 'crise', vivo: !!crise })}
         ${atalho({ icone: 'escama', texto: 'Registo digestivo', accao: 'digestivo' })}
         ${atalho({ icone: 'comida', texto: 'Refeição', valor: refeicoesHoje.length ? `${refeicoesHoje.length} hoje` : '', accao: 'refeicao' })}

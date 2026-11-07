@@ -2,6 +2,8 @@
    utils.js — helpers de DOM, folhas modais, toasts, háptica e ícones
    ========================================================================== */
 
+import { settingsCache } from './store.js';
+
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -35,8 +37,14 @@ export const dataCurta = (d) =>
 
 /* -------------------------------------------------------------- háptica -- */
 
-/** Feedback tátil. iOS Safari não expõe Vibration API → degradação silenciosa. */
+/**
+ * Feedback tátil. iOS Safari não expõe Vibration API → degradação silenciosa.
+ * O interruptor “Feedback háptico” das Definições é respeitado: quando está
+ * desligado, nenhum controlo vibra.
+ */
 export function haptic(pattern = 8) {
+  const s = settingsCache();
+  if (s && s.haptics === false) return;
   try {
     if (navigator.vibrate) navigator.vibrate(pattern);
   } catch { /* ignorado */ }
@@ -56,6 +64,37 @@ export function toast(msg, kind = 'ok', ms = 2600) {
 }
 
 /* ---------------------------------------------------------------- sheet  */
+
+/**
+ * Pilha de folhas abertas. Só a última responde a Escape/Tab: abrir uma folha
+ * a partir de outra (ex.: Definições → cópia .aura) não faz a de trás fechar.
+ */
+const folhas = [];
+
+/** Há uma folha modal aberta? (os atalhos globais devem ficar quietos) */
+export const folhaAberta = () => folhas.length > 0;
+
+function teclaNasFolhas(e) {
+  const topo = folhas[folhas.length - 1];
+  if (!topo) return;
+
+  if (e.key === 'Escape') { e.preventDefault(); topo.fechar(); return; }
+  if (e.key !== 'Tab') return;
+
+  /* Focus trap: Tab/Shift+Tab ciclam dentro da folha do topo */
+  const focusable = topo.scrim.querySelectorAll(
+    'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), a[href]'
+  );
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+  } else if (document.activeElement === last) {
+    e.preventDefault(); first.focus();
+  }
+}
+document.addEventListener('keydown', teclaNasFolhas);
 
 /**
  * Abre uma folha modal (bottom sheet) e devolve { root, fechar, body }.
@@ -78,41 +117,29 @@ export function sheet({ titulo = '', sub = '', corpo = '', acoes = '', larguraCh
   const body = scrim.querySelector('.sheet-body');
   if (typeof corpo === 'string') body.innerHTML = corpo; else if (corpo) body.appendChild(corpo);
 
+  const focoAnterior = document.activeElement;
   let fechada = false;
+
   const fechar = () => {
     if (fechada) return;
     fechada = true;
+    const i = folhas.findIndex(f => f.fechar === fechar);
+    if (i >= 0) folhas.splice(i, 1);
     scrim.classList.remove('in');
     setTimeout(() => scrim.remove(), 240);
-    document.removeEventListener('keydown', onKey);
-    document.removeEventListener('keydown', trapFocus);
     if (typeof aoFechar === 'function') aoFechar();
-  };
-  const onKey = (e) => { if (e.key === 'Escape') fechar(); };
-
-  /* Focus trap: Tab/Shift+Tab ciclam dentro da sheet */
-  const trapFocus = (e) => {
-    if (e.key !== 'Tab') return;
-    const focusable = scrim.querySelectorAll(
-      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), a[href]'
-    );
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (e.shiftKey) {
-      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
-    } else {
-      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    // devolve o foco a quem abriu a folha (teclado e leitores de ecrã)
+    if (focoAnterior && focoAnterior.isConnected && typeof focoAnterior.focus === 'function') {
+      try { focoAnterior.focus({ preventScroll: true }); } catch { /* ignorado */ }
     }
   };
 
   scrim.addEventListener('click', (e) => {
     if (e.target === scrim || e.target.closest('[data-fechar]')) fechar();
   });
-  document.addEventListener('keydown', onKey);
-  document.addEventListener('keydown', trapFocus);
 
   root.appendChild(scrim);
+  folhas.push({ scrim, fechar });
   requestAnimationFrame(() => scrim.classList.add('in'));
   const first = scrim.querySelector('input, textarea, select, button:not([data-fechar])');
   if (first) setTimeout(() => first.focus({ preventScroll: true }), 260);

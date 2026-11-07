@@ -86,21 +86,32 @@ export function estadoGarmin() {
 const LIMPAR_CHAVE = (s) => String(s || '').trim().replace(/\s+/g, '');
 
 async function pedir(conf, caminho) {
-  const r = await fetch(API + caminho, {
-    headers: {
-      Authorization: 'Basic ' + btoa(`API_KEY:${conf.chave}`),
-      Accept: 'application/json',
-    },
-  });
-  if (r.status === 401) throw new Error('Chave recusada. Gere outra em intervals.icu → Definições → Developer Settings.');
-  if (r.status === 403) throw new Error('A chave não tem acesso a este atleta. Confirme o ID (0 usa a conta da chave).');
-  if (r.status === 429) {
-    const s = Number(r.headers.get('Retry-After'));
-    const min = Number.isFinite(s) && s > 0 ? Math.ceil(s / 60) : 5;
-    throw new Error(`Limite de pedidos do Intervals.icu atingido. Tente daqui a ${min} min.`);
+  // um pedido pendurado bloquearia a sincronização para sempre (aCarregar)
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const r = await fetch(API + caminho, {
+      headers: {
+        Authorization: 'Basic ' + btoa(`API_KEY:${conf.chave}`),
+        Accept: 'application/json',
+      },
+      signal: ctrl.signal,
+    });
+    if (r.status === 401) throw new Error('Chave recusada. Gere outra em intervals.icu → Definições → Developer Settings.');
+    if (r.status === 403) throw new Error('A chave não tem acesso a este atleta. Confirme o ID (0 usa a conta da chave).');
+    if (r.status === 429) {
+      const s = Number(r.headers.get('Retry-After'));
+      const min = Number.isFinite(s) && s > 0 ? Math.ceil(s / 60) : 5;
+      throw new Error(`Limite de pedidos do Intervals.icu atingido. Tente daqui a ${min} min.`);
+    }
+    if (!r.ok) throw new Error(`O Intervals.icu respondeu ${r.status}.`);
+    return await r.json();
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('O Intervals.icu não respondeu a tempo. Tente de novo.');
+    throw e;
+  } finally {
+    clearTimeout(t);
   }
-  if (!r.ok) throw new Error(`O Intervals.icu respondeu ${r.status}.`);
-  return r.json();
 }
 
 /** Confirma a chave e devolve o nome do atleta + o último dia de wellness. */
