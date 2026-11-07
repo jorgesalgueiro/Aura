@@ -1,6 +1,9 @@
 # artefactos de publicação
 dist/
 
+# cópias de segurança pessoais (contêm dados de saúde — nunca para um repositório público)
+aura-*.json
+
 # sistema
 .DS_Store
 Thumbs.db

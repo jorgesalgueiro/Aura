@@ -14,6 +14,9 @@ import {
   ligacao, ligar, desligar, sincronizar, sincronizarAgora, observarSync, estadoGarmin,
 } from './intervals.js';
 import { instalada, plataforma, escutarInstalacao, sheetInstalar } from './instalar.js';
+import {
+  sheetExportarEncriptada, abrirCopiaEncriptada, descreverUltimaCopia,
+} from './cofre.js';
 import { sheetCrise, sheetAgua, sheetTomas, sheetDigestivo } from './screens/acoes.js';
 
 import * as Dashboard  from './screens/dashboard.js';
@@ -157,6 +160,20 @@ export async function sheetDefinicoes() {
         </details>
       </div>
 
+      <div class="section-title">Cópia de segurança</div>
+      <div class="card card-tight">
+        <div class="metric-label">Cópia encriptada · .aura</div>
+        <div class="metric-foot" data-copia-estado>Ainda não guardaste nenhuma cópia.</div>
+        <p class="hint mt8">Um ficheiro que só abre com uma passphrase que escolhes. Guarda-o na
+          pasta Aura, no iCloud ou no Drive. <b>A passphrase não fica guardada</b> — sem ela,
+          nem tu nem a app conseguem abrir a cópia.</p>
+        <div class="btn-row mt12">
+          <button class="btn btn-sm btn-primary" data-copia-exportar>${ICON.download} Exportar encriptada</button>
+          <button class="btn btn-sm" data-copia-abrir>${ICON.upload} Abrir cópia encriptada</button>
+        </div>
+        <input type="file" accept=".aura" data-ficheiro-cofre style="display:none">
+      </div>
+
       <div class="section-title">Os seus dados</div>
       <div class="note" style="margin-bottom:12px">
         Tudo fica <b>guardado neste dispositivo</b> (IndexedDB). Não há servidor nem conta.
@@ -165,9 +182,11 @@ export async function sheetDefinicoes() {
       </div>
       <div class="btn-row">
         <button class="btn btn-sm" data-imp>${ICON.upload} Importar Saúde / Garmin</button>
-        <button class="btn btn-sm" data-backup>${ICON.download} Exportar cópia</button>
-        <button class="btn btn-sm" data-restore>${ICON.upload} Restaurar cópia</button>
+        <button class="btn btn-sm btn-ghost" data-backup>${ICON.download} Exportar JSON</button>
+        <button class="btn btn-sm btn-ghost" data-restore>${ICON.upload} Restaurar JSON</button>
       </div>
+      <p class="hint mt8">O JSON é legível por qualquer pessoa — usa-o só para mover dados entre
+        aparelhos. Para guardar, prefere a cópia encriptada em cima.</p>
       <div class="btn-row mt12">
         <button class="btn btn-sm btn-ghost" data-exemplo>${ICON.grafico} Carregar dados de exemplo</button>
         <button class="btn btn-sm btn-danger" data-apagar>${ICON.lixo} Apagar registos</button>
@@ -292,6 +311,27 @@ export async function sheetDefinicoes() {
   };
 
   const ficheiro = corpo.querySelector('[data-ficheiro]');
+  const estadoCopiaEl = corpo.querySelector('[data-copia-estado]');
+  descreverUltimaCopia().then((t) => { estadoCopiaEl.textContent = t; });
+
+  const ficheiroCofre = corpo.querySelector('[data-ficheiro-cofre]');
+  corpo.querySelector('[data-copia-abrir]').onclick = () => ficheiroCofre.click();
+  ficheiroCofre.onchange = async () => {
+    const f = ficheiroCofre.files[0];
+    if (!f) return;
+    const ok = await abrirCopiaEncriptada(f);
+    ficheiroCofre.value = '';
+    if (ok) { fecharSheet(); refresh(); }
+  };
+  corpo.querySelector('[data-copia-exportar]').onclick = () => {
+    sheetExportarEncriptada({
+      aoGuardar: async () => {
+        estadoCopiaEl.textContent = await descreverUltimaCopia();
+        refresh();
+      },
+    });
+  };
+
   corpo.querySelector('[data-imp]').onclick = () => sheetImportar();
   corpo.querySelector('[data-backup]').onclick = async () => {
     const payload = await exportarTudo();
@@ -301,7 +341,9 @@ export async function sheetDefinicoes() {
     a.download = `aura-${diaKey()}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    toast('Cópia exportada');
+    await saveSettings({ ultimaCopia: new Date().toISOString(), copiaAdiada: null });
+    estadoCopiaEl.textContent = await descreverUltimaCopia();
+    toast('JSON exportado — sem passphrase, legível por qualquer pessoa', 'ok', 5000);
   };
   corpo.querySelector('[data-restore]').onclick = () => { ficheiro.dataset.modo = 'restauro'; ficheiro.click(); };
   ficheiro.onchange = async () => {

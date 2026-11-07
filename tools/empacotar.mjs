@@ -232,7 +232,7 @@ console.log(`  ${ficheiros.length} ficheiros · ${kb(total)} descomprimidos · b
 console.log(linha('dist/site/', 'pasta pronta a publicar'));
 console.log(linha(`dist/${v}.zip`, `${kb(zip.length)}  · arrastar para um hosting`));
 console.log(linha(`dist/${v}.tar.gz`, `${kb(tgz.length)}  · servidor ou Docker`));
-console.log('\nPublicar e instalar no iPhone: README.md → "Publicar e instalar".\n');
+console.log('\nPublicar e instalar no iPhone: docs/tecnico.md → "Pôr online".\n');
 
 if (anterior && anterior.versao === v && anterior.hash !== impressao) {
   console.warn(`⚠  Os ficheiros mudaram mas o VERSAO continua ${v}.`);

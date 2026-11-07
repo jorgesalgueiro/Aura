@@ -122,6 +122,8 @@ export const DEFAULT_SETTINGS = {
   unidades: 'metric',
   haptics: true,
   instalarOculto: false,      // o cartão "instalar no ecrã principal" foi dispensado
+  ultimaCopia: null,          // ISO da última cópia exportada (JSON ou .aura)
+  copiaAdiada: null,          // ISO até quando o aviso de cópia fica escondido
   importadoDe: null,          // { origem, data, contagem }
 };
 
@@ -372,18 +374,24 @@ export async function exportarTudo() {
 
 export async function importarTudo(payload, { substituir = true } = {}) {
   if (!payload || !payload.dados) throw new Error('Ficheiro inválido.');
+  // A chave do Intervals.icu é uma credencial deste aparelho, nunca vai numa
+  // cópia: restaurar não deve desligar o Garmin de quem já o tinha ligado.
+  const credencial = substituir ? await get('meta', 'intervals').catch(() => null) : null;
   if (substituir) for (const name of Object.keys(STORES)) await clear(name);
   let n = 0;
   for (const [name, rows] of Object.entries(payload.dados)) {
     if (!STORES[name] || !Array.isArray(rows)) continue;
     for (const row of rows) { await put(name, row); n++; }
   }
+  if (credencial) await put('meta', credencial);
   _settings = null;
   return n;
 }
 
 export async function limparDadosPessoais() {
-  for (const name of ['registoDiario', 'registoEnxaqueca', 'registoFezes', 'itemMedicacao', 'tomaMedicacao', 'refeicao']) {
+  // A base de medicação fica: apagar "os registos" é apagar o diário, não a lista
+  // de medicamentos que a pessoa configurou (o texto da confirmação promete-o).
+  for (const name of ['registoDiario', 'registoEnxaqueca', 'registoFezes', 'tomaMedicacao', 'refeicao']) {
     await clear(name);
   }
 }

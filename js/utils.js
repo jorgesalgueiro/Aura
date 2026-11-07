@@ -61,7 +61,7 @@ export function toast(msg, kind = 'ok', ms = 2600) {
  * Abre uma folha modal (bottom sheet) e devolve { root, fechar, body }.
  * `corpo` pode ser HTML string ou um elemento.
  */
-export function sheet({ titulo = '', sub = '', corpo = '', acoes = '', larguraCheia = false } = {}) {
+export function sheet({ titulo = '', sub = '', corpo = '', acoes = '', larguraCheia = false, aoFechar } = {}) {
   const root = document.getElementById('sheet-root');
   const scrim = el(`
     <div class="scrim" role="dialog" aria-modal="true" aria-label="${esc(titulo || 'Detalhes')}">
@@ -78,11 +78,15 @@ export function sheet({ titulo = '', sub = '', corpo = '', acoes = '', larguraCh
   const body = scrim.querySelector('.sheet-body');
   if (typeof corpo === 'string') body.innerHTML = corpo; else if (corpo) body.appendChild(corpo);
 
+  let fechada = false;
   const fechar = () => {
+    if (fechada) return;
+    fechada = true;
     scrim.classList.remove('in');
     setTimeout(() => scrim.remove(), 240);
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('keydown', trapFocus);
+    if (typeof aoFechar === 'function') aoFechar();
   };
   const onKey = (e) => { if (e.key === 'Escape') fechar(); };
 

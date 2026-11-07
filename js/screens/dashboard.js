@@ -17,6 +17,9 @@ import { go, refresh } from '../nav.js';
 import { sheetImportar } from '../health-import.js';
 import { deveMostrarCartao, cartaoInstalarHTML, sheetInstalar, dispensarCartao } from '../instalar.js';
 import { ligacao as ligacaoGarmin, sincronizarAgora } from '../intervals.js';
+import {
+  precisaCopia, estadoCopia, cartaoCopiaHTML, adiarAvisoCopia, sheetExportarEncriptada,
+} from '../cofre.js';
 
 const hora = () => new Date().getHours();
 const saudacao = () =>
@@ -77,6 +80,7 @@ export async function render() {
   const temSensores = [dia.sonoHoras, dia.pesoKg, dia.passos, dia.hrvMs, dia.kcalAtivas].some(v => v != null);
   const mostrarInstalar = await deveMostrarCartao();
   const garmin = await ligacaoGarmin();
+  const mostrarCopia = await precisaCopia();
 
   const html = [];
 
@@ -93,6 +97,12 @@ export async function render() {
 
   /* ------------------------------------------------ instalar a app ----- */
   if (mostrarInstalar) html.push(`<div class="section">${cartaoInstalarHTML()}</div>`);
+
+  /* --------------------------------------------- lembrete de cópia ----- */
+  if (mostrarCopia) {
+    const { dias } = await estadoCopia();
+    html.push(`<div class="section">${cartaoCopiaHTML({ dias })}</div>`);
+  }
 
   /* ---------------------------------------------------- Atalhos rápidos -- */
   html.push(`
@@ -227,6 +237,8 @@ const ACCOES = {
     const r = await sincronizarAgora({ dias: 7 });
     if (r && r.dias) refresh();
   },
+  copia: () => sheetExportarEncriptada({ aoGuardar: () => refresh() }),
+  'copia-adiar': async () => { await adiarAvisoCopia(); haptic(6); refresh(); },
   'ver-relatorios': () => go('relatorios'),
 };
 
