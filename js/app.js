@@ -151,7 +151,7 @@ export async function sheetDefinicoes() {
         <label class="fld mt12"><span>Chave da API do Intervals.icu</span>
           <input type="password" data-gkey value="${esc(g.chave)}" placeholder="cole aqui a chave" autocomplete="off" spellcheck="false"></label>
         <label class="fld"><span>ID de atleta <small style="font-weight:400">· 0 = a conta da chave</small></span>
-          <input type="number" min="0" step="1" data-gid value="${esc(g.athleteId || '0')}"></label>
+          <input type="text" data-gid value="${esc(g.athleteId || '0')}" placeholder="0 ou i12345" autocomplete="off" spellcheck="false"></label>
         <div class="btn-row">
           <button class="btn btn-sm btn-primary" data-gligar>${estado.ligado ? 'Testar de novo' : 'Ligar'}</button>
           <button class="btn btn-sm" data-gsync ${estado.ligado ? '' : 'disabled'}>Sincronizar agora</button>

@@ -136,8 +136,12 @@ export async function ligar({ athleteId, chave }) {
   if (!/^[A-Za-z0-9_-]{8,}$/.test(k)) {
     throw new Error('A chave da API parece inválida (mínimo 8 letras ou números, sem espaços).');
   }
-  const id = String(athleteId || '0').trim() || '0';
-  if (!/^\d+$/.test(id)) throw new Error('O ID de atleta é numérico — use 0 para a conta da chave.');
+  const id = String(athleteId || '0').trim().toLowerCase() || '0';
+  // o Intervals.icu aceita 0 (a conta da chave), o id numérico ou o id com
+  // prefixo "i" que aparece no site (ex.: i85346)
+  if (!/^(?:0|i?\d+)$/.test(id)) {
+    throw new Error('O ID de atleta é numérico ou tem o formato i12345 — use 0 para a conta da chave.');
+  }
 
   const conf = { ativo: true, athleteId: id, chave: k, ultimaSync: null, ultimoErro: null };
   const teste = await testar(conf);
@@ -278,9 +282,19 @@ async function recolher(conf, dias) {
  * Usada pelas Definições e pelo atalho do dashboard.
  */
 export async function sincronizarAgora({ dias = 30 } = {}) {
+  if (sync.aCarregar) {
+    toast('Já há uma sincronização em curso. Aguarde uns segundos.', 'warn', 4000);
+    return null;
+  }
+  const conf = await ligacao();
+  if (!conf.ativo || !conf.chave) {
+    toast('O Garmin não está ligado.', 'warn');
+    return null;
+  }
   try {
     const r = await sincronizar({ dias, forcar: true, silencioso: false });
-    if (!r) { toast('O Garmin não está ligado.', 'warn'); return null; }
+    // sem dados e sem erro significa que outra sincronização arrancou entretanto
+    if (!r) { toast('A sincronização não avançou. Tente de novo.', 'warn'); return null; }
     if (r.dias) toast(`${r.dias} dia${r.dias > 1 ? 's' : ''} atualizado${r.dias > 1 ? 's' : ''}`);
     else toast('Já estava tudo atualizado');
     return r;

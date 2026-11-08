@@ -367,7 +367,9 @@ servidor e sem backend.
 3. No fim das Definições, em **Developer Settings**, copia a **API key**.
 4. No Aura: **Definições → Garmin · automático** → cola a chave → **Ligar**.
 
-O campo *ID de atleta* pode ficar em `0` — quer dizer "a conta da chave".
+O campo *ID de atleta* pode ficar em `0` — quer dizer "a conta da chave". Para a conta de
+outra pessoa (por exemplo, um atleta que acompanhas), usa o ID que aparece no site, como
+`i12345`.
 
 Depois disso, a app sincroniza ao abrir, ao voltar ao primeiro plano e no *pull-to-refresh*, no
 máximo de 20 em 20 minutos. **Sincronizar agora** força. Entram **sono, VFC/HRV, passos, peso**
