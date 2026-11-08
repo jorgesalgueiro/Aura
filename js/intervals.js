@@ -259,7 +259,10 @@ async function recolher(conf, dias) {
     const atual = await getDia(chave);
     const escolhidos = {};
     for (const [campo, valor] of Object.entries(patch)) {
-      if (podeEscrever(atual, campo)) escolhidos[campo] = valor;
+      if (!podeEscrever(atual, campo)) continue;
+      // já está igual: não vale a pena reescrever nem contar como dia atualizado
+      if (atual[campo] != null && Number(atual[campo]) === Number(valor)) continue;
+      escolhidos[campo] = valor;
     }
     if (!Object.keys(escolhidos).length) continue;
 

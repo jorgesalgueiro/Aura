@@ -10,7 +10,7 @@
    Os dados de saúde vivem em IndexedDB e não passam nunca por aqui.
    ========================================================================== */
 
-const VERSAO = 'aura-v14';
+const VERSAO = 'aura-v15';
 const CACHE_SHELL = `${VERSAO}-shell`;
 const CACHE_DADOS = `${VERSAO}-dados`;
 
