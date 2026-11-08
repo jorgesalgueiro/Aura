@@ -423,11 +423,26 @@ export async function sheetDigestivo(data = diaKey()) {
   const corpo = el(`
     <div>
       <div class="section-title" style="margin-top:0">Escala de Bristol</div>
-      <div class="bristol" data-bristol>
-        ${BRISTOL.map(b => `<button data-tipo="${b.tipo}" aria-pressed="false" title="${esc(b.nome)} — ${esc(b.desc)}">
-          ${bristolSVG(b.tipo)}<span class="n">${b.tipo}</span></button>`).join('')}
+      <div class="bristol-legend">
+        ${[...new Map(BRISTOL.map(b => [b.grupo, b.cor])).entries()]
+          .map(([nome, cor]) => {
+            const tipos = BRISTOL.filter(b => b.grupo === nome).map(b => b.tipo);
+            const faixa = tipos.length > 1 ? `${tipos[0]}–${tipos.at(-1)}` : String(tipos[0]);
+            return `<span><i style="background:${cor}"></i>${faixa} ${esc(nome)}</span>`;
+          }).join('')}
       </div>
-      <p class="hint" data-desc style="margin-top:10px">Escolha o aspeto das fezes. A hora do evento é registada automaticamente.</p>
+      <div class="bristol" data-bristol role="group" aria-label="Escolha o tipo de Bristol">
+        ${BRISTOL.map(b => `<button data-tipo="${b.tipo}" aria-pressed="false" style="--bc:${b.cor}"
+          title="Tipo ${b.tipo} — ${esc(b.nome)}" aria-label="Tipo ${b.tipo}, ${esc(b.nome)}: ${esc(b.desc)}">
+          <span class="b-top"><span class="b-ico">${bristolSVG(b.tipo)}</span><span class="tag">${esc(b.grupo)}</span></span>
+          <span class="nm">${esc(b.nome)}</span>
+          <span class="n">Tipo ${b.tipo}</span>
+        </button>`).join('')}
+      </div>
+      <div class="bristol-guide" data-desc>
+        <div><b>Escolha o aspeto mais parecido</b>
+          <p>Toque num tipo para ver o nome e a descrição. A hora é registada automaticamente.</p></div>
+      </div>
 
       <label class="fld"><span>Hora (opcional, se não foi agora)</span><input type="time" data-hora value="${hhmm(new Date())}"></label>
 
@@ -457,8 +472,12 @@ export async function sheetDigestivo(data = diaKey()) {
   on(corpo, 'click', '[data-tipo]', (e, b) => {
     tipo = +b.dataset.tipo;
     corpo.querySelectorAll('[data-tipo]').forEach(x => x.setAttribute('aria-pressed', x === b));
-    corpo.querySelector('[data-desc]').innerHTML =
-      `<b>Tipo ${tipo} — ${esc(BRISTOL[tipo - 1].nome)}</b> · ${esc(BRISTOL[tipo - 1].desc)}`;
+    const info = BRISTOL[tipo - 1];
+    const guia = corpo.querySelector('[data-desc]');
+    guia.style.setProperty('--bc', info.cor);
+    guia.innerHTML = `<span class="g-ico">${bristolSVG(tipo)}</span>
+      <div><b>Tipo ${tipo} · ${esc(info.nome)}</b> <span class="tag">${esc(info.grupo)}</span>
+      <p>${esc(info.desc)}</p></div>`;
     haptic(10);
   });
   on(corpo, 'click', '[data-fat]', (e, b) => {

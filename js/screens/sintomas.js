@@ -444,8 +444,8 @@ export async function bind(root) {
 /** Distribuição da escala de Bristol a partir dos registos (reutiliza _memoria). */
 function distBristol(fs) {
   return BRISTOL.map(b => ({
-    rotulo: `${b.tipo} · ${b.nome}`,
+    rotulo: `${b.tipo} · ${b.curto}`,
     valor: (fs || []).filter(f => f.tipo === b.tipo).length,
-    cor: b.tipo <= 2 ? '#60a5fa' : b.tipo <= 4 ? '#34d399' : b.tipo === 5 ? '#a78bfa' : '#fbbf24',
+    cor: b.cor,
   })).filter(d => d.valor);
 }

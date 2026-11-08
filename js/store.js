@@ -259,13 +259,20 @@ export async function updateCrise(id, patch) {
 export const DOENCAS = ['Gripe', 'Dores de Costas', 'Febre', 'Cansaço Extremo', 'Náuseas', 'Tontura', 'Insónia', 'Alergia'];
 
 export const BRISTOL = [
-  { tipo: 1, nome: 'Bolas duras',   desc: 'Difícil de passar, separadas' },
-  { tipo: 2, nome: 'Em salsicha',   desc: 'Duro e em caroços' },
-  { tipo: 3, nome: 'Fendido',       desc: 'Salsicha com fissuras na superfície' },
-  { tipo: 4, nome: 'Ideal',         desc: 'Liso e macio, fácil de passar' },
-  { tipo: 5, nome: 'Macio',         desc: 'Fragmentos com bordas definidas' },
-  { tipo: 6, nome: 'Pastosamente',  desc: 'Muito mole, bordas irregulares' },
-  { tipo: 7, nome: 'Aquoso',        desc: 'Sem partes sólidas, líquido' },
+  { tipo: 1, nome: 'Bolas duras',           curto: 'Bolas duras',   grupo: 'Obstipação', cor: '#fbbf24',
+    desc: 'Pequenas bolas duras e separadas, como caroços. Difícil de passar.' },
+  { tipo: 2, nome: 'Salsicha granulosa',    curto: 'Granulosa',     grupo: 'Obstipação', cor: '#fbbf24',
+    desc: 'Forma de salsicha, mas com caroços e superfície irregular.' },
+  { tipo: 3, nome: 'Salsicha com fissuras', curto: 'Com fissuras',  grupo: 'Normal',     cor: '#34d399',
+    desc: 'Salsicha firme, com rachas à superfície.' },
+  { tipo: 4, nome: 'Salsicha lisa',         curto: 'Lisa',          grupo: 'Normal',     cor: '#34d399',
+    desc: 'Lisa, macia e contínua. É o aspeto mais habitual.' },
+  { tipo: 5, nome: 'Pedaços macios',        curto: 'Pedaços macios', grupo: 'Solto',     cor: '#38bdf8',
+    desc: 'Pedaços moles com bordas definidas; passam facilmente.' },
+  { tipo: 6, nome: 'Mole e pastoso',        curto: 'Pastoso',       grupo: 'Diarreia',   cor: '#f87171',
+    desc: 'Pedaços fofos com bordas irregulares; consistência pastosa.' },
+  { tipo: 7, nome: 'Líquido',               curto: 'Líquido',       grupo: 'Diarreia',   cor: '#f87171',
+    desc: 'Aquoso, sem pedaços sólidos.' },
 ];
 
 export async function registosFezes(doUltimosDias = 90) {

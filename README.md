@@ -226,8 +226,9 @@ Numa data passada, os registos ficam nessa data. As crises antigas editam-se no 
 
 #### Digestivo
 
-* **Registar evacuação** — escolhe o aspeto na **escala de Bristol (1 a 7)**, com pictogramas e
-  descrição. A hora é a de agora, mas podes corrigi-la.
+* **Registar evacuação** — escolhe o aspeto na **escala de Bristol (1 a 7)**. Os sete tipos
+  aparecem com pictograma, nome e uma etiqueta de grupo (obstipação, normal, solto ou diarreia);
+  ao tocar, vês a descrição completa. A hora é a de agora, mas podes corrigi-la.
 * No mesmo registo podes marcar **desconforto 0–10**, **sangramento** e fatores (esforço,
   stress, pouca fibra, pouca água, viajar, ficar muito sentado).
 * **Distribuição de Bristol** nos últimos 60 dias, numa barra por tipo.

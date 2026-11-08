@@ -462,19 +462,42 @@ button.row:hover, .row.hoverable:hover { background: var(--surface-2); }
 .head-outline { fill: rgba(255,255,255,.028); stroke: rgba(255,255,255,.2); stroke-width: 1.6; }
 
 /* ---------- Bristol scale ---------- */
-.bristol { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.bristol-legend {
+  display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 2px 0 10px;
+  font-size: 11px; color: var(--text-2);
+}
+.bristol-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.bristol-legend i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+
+.bristol { display: grid; grid-template-columns: repeat(auto-fit, minmax(142px, 1fr)); gap: 8px; }
 .bristol button {
   font: inherit; background: var(--surface); border: 1px solid var(--stroke); border-radius: 13px;
-  padding: 9px 3px 7px; cursor: pointer; color: var(--text-2); display: flex; flex-direction: column;
-  align-items: center; gap: 5px; transition: .16s ease;
+  padding: 10px 10px 9px; cursor: pointer; color: var(--text-2); display: flex; flex-direction: column;
+  align-items: stretch; gap: 4px; text-align: left; transition: .16s ease; min-height: 96px;
 }
-.bristol button svg { width: 100%; max-width: 40px; height: 34px; }
-.bristol button span.n { font-size: 11px; font-weight: 720; font-variant-numeric: tabular-nums; }
 .bristol button:hover { border-color: var(--stroke-strong); color: var(--text); }
-.bristol button[aria-pressed="true"] {
-  background: rgba(45,212,191,.15); border-color: rgba(45,212,191,.55); color: #99f6e4;
-  box-shadow: 0 0 0 3px rgba(45,212,191,.1);
+.bristol .b-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.bristol .b-ico { color: var(--bc); display: inline-flex; }
+.bristol .b-ico svg { width: 42px; height: 27px; }
+.bristol .nm { font-size: 12.5px; font-weight: 650; color: var(--text); line-height: 1.2; }
+.bristol .n { font-size: 10.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.bristol .tag, .bristol-guide .tag {
+  font-size: 9px; font-weight: 750; letter-spacing: .35px; text-transform: uppercase;
+  color: var(--bc); background: rgba(255,255,255,.065); padding: 2px 6px; border-radius: 999px; white-space: nowrap;
 }
+.bristol button[aria-pressed="true"] {
+  background: rgba(255,255,255,.055); border-color: var(--bc);
+  box-shadow: inset 0 0 0 1px var(--bc), 0 0 0 3px rgba(255,255,255,.045);
+}
+
+.bristol-guide {
+  margin-top: 10px; padding: 11px 13px; border: 1px solid var(--stroke); border-radius: 13px;
+  background: var(--surface); display: flex; gap: 11px; align-items: flex-start; min-height: 54px;
+}
+.bristol-guide .g-ico { flex: 0 0 44px; color: var(--bc, var(--text-2)); }
+.bristol-guide .g-ico svg { width: 44px; height: 28px; }
+.bristol-guide b { font-size: 13px; }
+.bristol-guide p { margin: 3px 0 0; font-size: 12px; color: var(--text-2); line-height: 1.45; }
 
 /* ---------- water ring / progress ---------- */
 .ring { display: grid; place-items: center; position: relative; }
