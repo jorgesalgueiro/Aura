@@ -193,7 +193,8 @@ preencher ontem à noite no dia seguinte.
 É a vista cronológica do dia.
 
 * **Números do dia** — água, sono, peso, passos, pressão e HRV num só cartão, com etiquetas da
-  origem.
+  origem. O peso também pode ser escrito à mão aqui ou no cartão **Peso** do dashboard; um valor
+  manual nunca é substituído pelo Garmin.
 * **Linha do tempo** — crises, tomas, evacuações, afrontamentos e refeições, por ordem da hora,
   com os detalhes de cada um (intensidade, zona, duração, Δ6 h, tipo de Bristol, calorias…).
 * **Notas do dia** — texto livre. Fica guardado quando sais do campo; não há botão de guardar.

@@ -11,7 +11,7 @@ import { esc, fmt, el, dataLonga, dataCurta, ICON, on, haptic, toast, bristolSVG
 import { corIntensidade, barrasHorizontais, chartRelacao } from '../charts.js';
 import { cabecalho, segmentados, vazio, etiquetaOrigem } from './parts.js';
 import {
-  sheetCrise, sheetDigestivo, sheetRefeicao, sheetAgua, sheetTomas, sheetAfrontamento,
+  sheetCrise, sheetDigestivo, sheetRefeicao, sheetAgua, sheetTomas, sheetAfrontamento, sheetPeso,
   cardCriseAtiva, intensidadeLabel,
 } from './acoes.js';
 import { route, go, refresh } from '../nav.js';
@@ -117,6 +117,9 @@ async function diario() {
         ${kv('HRV', dia.hrvMs ? `${fmt(dia.hrvMs)} ms` : '—')}
       </div>
       ${origens.length ? `<div class="chips mt12" style="gap:6px">${origens.map(etiquetaOrigem).join('')}</div>` : ''}
+      <div class="btn-row mt12">
+        <button class="btn btn-sm btn-ghost" data-acao="peso">${ICON.peso} ${dia.pesoKg != null ? 'Editar peso' : 'Registar peso'}</button>
+      </div>
     </div>`;
 
   const cronologia = eventos.length
@@ -337,7 +340,7 @@ export async function render(view) {
 /* --------------------------------------------------------------- bind --- */
 
 const ACCOES = {
-  agua: (d) => sheetAgua(d), tomas: (d) => sheetTomas(d), crise: () => sheetCrise(),
+  agua: (d) => sheetAgua(d), peso: (d) => sheetPeso(d), tomas: (d) => sheetTomas(d), crise: () => sheetCrise(),
   digestivo: (d) => sheetDigestivo(d), refeicao: (d) => sheetRefeicao({ data: d }),
   afrontamento: (d) => sheetAfrontamento(d),
   importar: async () => { const { sheetImportar } = await import('../health-import.js'); sheetImportar(); },

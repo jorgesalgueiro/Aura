@@ -25,8 +25,8 @@ node tools/empacotar.mjs
 | Saída | Para quê |
 |---|---|
 | `dist/site/` | pasta pronta a publicar |
-| `dist/aura-v15.zip` | arrastar para um hosting estático |
-| `dist/aura-v15.tar.gz` | copiar para um servidor / imagem Docker |
+| `dist/aura-v16.zip` | arrastar para um hosting estático |
+| `dist/aura-v16.tar.gz` | copiar para um servidor / imagem Docker |
 | `dist/BUILD.json` | versão + hash do conteúdo (para comparar builds) |
 
 O script confirma primeiro que todos os ficheiros listados no `SHELL` do service worker
@@ -34,7 +34,7 @@ existem — um deploy com um ficheiro em falta falha aqui, não no telefone. No 
 build com o `dist/BUILD.json` anterior e avisa se os ficheiros mudaram sem o `VERSAO` subir:
 
 ```
-⚠  Os ficheiros mudaram mas o VERSAO continua aura-v15.
+⚠  Os ficheiros mudaram mas o VERSAO continua aura-v16.
    Quem já tem a app instalada não recebe esta alteração — avance o VERSAO em sw.js.
 ```
 
@@ -171,7 +171,7 @@ for (const c of await caches.keys()) await caches.delete(c);
 location.reload();
 ```
 
-Ao mexer em qualquer ficheiro do `SHELL` de `sw.js`, avança `VERSAO` (`aura-v15` agora) para
+Ao mexer em qualquer ficheiro do `SHELL` de `sw.js`, avança `VERSAO` (`aura-v16` agora) para
 que as instalações existentes revalidem de uma vez. A app mostra "Nova versão disponível — a
 atualizar…" e recarrega sozinha quando o novo worker ativa.
 

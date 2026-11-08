@@ -14,8 +14,9 @@ export function cabecalho({ kicker, titulo, sub = '' }) {
 }
 
 /** Cartão-métrica estilo widget nativo (Ecrã 1). */
-export function metrico({ icone = 'info', cor = 'teal', label, valor, unidade = '', foot = '', href }) {
-  return `<div class="card ${href ? 'tap' : ''}" ${href ? `data-goto="${href}" role="button" tabindex="0"` : ''}>
+export function metrico({ icone = 'info', cor = 'teal', label, valor, unidade = '', foot = '', href, accao }) {
+  const interativo = !!(href || accao);
+  return `<div class="card${interativo ? ' tap' : ''}"${href ? ` data-goto="${href}"` : ''}${accao ? ` data-acao="${esc(accao)}"` : ''}${interativo ? ' role="button" tabindex="0"' : ''}>
     <div class="split" style="align-items:flex-start">
       <div>
         <div class="metric-label">${esc(label)}</div>

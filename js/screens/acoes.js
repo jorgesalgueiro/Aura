@@ -74,6 +74,60 @@ export async function sheetAgua(data = diaKey()) {
   return fechar;
 }
 
+/* ------------------------------------------------------------- peso ----- */
+
+/** Registo manual do peso (kg). Fica com origem manual: o Garmin não o substitui. */
+export async function sheetPeso(data = diaKey()) {
+  const dia = await getDia(data);
+  const corpo = el(`
+    <div>
+      <label class="fld"><span>Peso (kg)</span>
+        <input type="text" inputmode="decimal" data-peso value="${dia.pesoKg != null ? String(dia.pesoKg).replace('.', ',') : ''}"
+          placeholder="Ex.: 72,4" autocomplete="off" spellcheck="false"></label>
+      <p class="hint mt12">Registe à mesma hora do dia (idealmente em jejum) para as variações fazerem sentido.
+        Um valor manual nunca é substituído pela sincronização do Garmin.</p>
+      ${dia.pesoKg != null ? `<button class="btn btn-sm btn-ghost mt12" data-apagar-peso>Apagar peso deste dia</button>` : ''}
+    </div>`);
+
+  const { fechar } = sheet({
+    titulo: 'Peso', sub: data === diaKey() ? 'Hoje' : dataLonga(data), corpo,
+    acoes: `<button class="btn btn-ghost" data-fechar>Cancelar</button>
+            <button class="btn btn-primary" data-guardar-peso>Guardar</button>`,
+  });
+
+  const input = corpo.querySelector('[data-peso]');
+
+  const gravar = async () => {
+    const kg = Number(String(input.value).trim().replace(',', '.'));
+    if (!Number.isFinite(kg) || kg < 20 || kg > 400) {
+      toast('Indique um peso entre 20 e 400 kg', 'err');
+      input.focus();
+      return;
+    }
+    await patchDia(data, { pesoKg: Math.round(kg * 10) / 10 });
+    haptic([10, 40, 10]);
+    toast('Peso guardado');
+    fechar();
+    refresh();
+  };
+
+  corpo.closest('.sheet').querySelector('[data-guardar-peso]').onclick = gravar;
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); gravar(); }
+  });
+
+  corpo.querySelector('[data-apagar-peso]')?.addEventListener('click', async () => {
+    if (!confirm('Apagar o peso deste dia?')) return;
+    await patchDia(data, { pesoKg: null });
+    haptic(8);
+    toast('Peso apagado');
+    fechar();
+    refresh();
+  });
+
+  return fechar;
+}
+
 /* --------------------------------------------------------- medicação ---- */
 
 export async function sheetTomas(data = diaKey()) {

@@ -11,7 +11,7 @@ import { anel, sparkline, barrasSono, corIntensidade } from '../charts.js';
 import { clima, ultimasHoras, observarClima } from '../clima.js';
 import { metrico, atalho } from './parts.js';
 import {
-  sheetAgua, sheetTomas, sheetCrise, sheetDigestivo, sheetRefeicao, cardCriseAtiva,
+  sheetAgua, sheetTomas, sheetCrise, sheetDigestivo, sheetRefeicao, cardCriseAtiva, sheetPeso,
 } from './acoes.js';
 import { go, refresh } from '../nav.js';
 import { sheetImportar } from '../health-import.js';
@@ -139,8 +139,8 @@ export async function render() {
             : (temSensores ? 'sem detalhe de fases' : 'importe do Apple Saúde ou Garmin'),
         })}
         ${metrico({
-          icone: 'peso', cor: 'teal', label: 'Peso', valor: fmt(dia.pesoKg, 1), unidade: 'kg',
-          foot: deltaPeso == null ? (temSensores ? 'sem histórico' : '—')
+          icone: 'peso', cor: 'teal', label: 'Peso', valor: fmt(dia.pesoKg, 1), unidade: 'kg', accao: 'peso',
+          foot: deltaPeso == null ? (dia.pesoKg == null ? 'toque para registar' : 'sem histórico')
             : `${deltaPeso > 0.05 ? '▲' : deltaPeso < -0.05 ? '▼' : '='} ${fmt(Math.abs(deltaPeso), 1)} kg vs último registo`,
         })}
         ${metrico({ icone: 'passo', cor: 'green', label: 'Passos', valor: fmt(dia.passos), unidade: '', foot: dia.passos ? 'meta pessoal 8 000' : 'sem sincronização' })}
@@ -228,6 +228,7 @@ export async function render() {
 
 const ACCOES = {
   agua: () => sheetAgua(),
+  peso: () => sheetPeso(),
   tomas: () => sheetTomas(),
   crise: () => sheetCrise(),
   digestivo: () => sheetDigestivo(),
@@ -249,6 +250,12 @@ export async function bind(root) {
   on(root, 'click', '[data-acao]', (e, b) => {
     const fn = ACCOES[b.dataset.acao];
     if (fn) { haptic(8); fn(); }
+  });
+  // cartões ativáveis também respondem a Enter e Espaço; os <button> nativos
+  // já o fazem sozinhos e não devem receber um segundo clique
+  on(root, 'keydown', '[data-acao], [data-goto]', (e, b) => {
+    if (b.tagName === 'BUTTON') return;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); }
   });
   on(root, 'click', '[data-goto]', (e, b) => {
     const [tab, sub] = (b.dataset.goto || '').split('/');
