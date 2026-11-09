@@ -5,7 +5,7 @@
 import {
   getDia, patchDia, diaKey, hhmm, uid, iniciarCrise, terminarCrise, updateCrise, criseAtiva,
   farmacia, salvarItem, toggleToma, tomasDoDia, adicionarFezes, adicionarAfrontamento,
-  ZONAS_CABECA, GATILHOS, BRISTOL, settings,
+  ZONAS_CABECA, GATILHOS, BRISTOL, settings, GRUPOS_FARMACIA,
 } from '../store.js';
 import { el, esc, sheet, toast, haptic, ICON, bristolSVG, headMapSVG, on, fmt, dataLonga } from '../utils.js';
 import { anel, corIntensidade } from '../charts.js';
@@ -215,7 +215,9 @@ export async function sheetCrise(crise = null) {
   const existente = crise || await criseAtiva();
   const aEditar = existente || null;
   const emCurso = !!aEditar && !aEditar.dataFim;
-  const itens = await farmacia();
+  const itens = (await farmacia())
+    .filter(i => i.ativo !== false && i.sos !== false)
+    .sort((a, b) => (b.favorito ? 1 : 0) - (a.favorito ? 1 : 0) || a.nome.localeCompare(b.nome, 'pt'));
   const pressao = aEditar ? null : await capturarPressao();
 
   const estado = {
@@ -265,7 +267,7 @@ export async function sheetCrise(crise = null) {
       ${itens.length ? `<div class="section-title mt20">Medicação SOS</div>
         <div class="list" data-sos>
           ${itens.map(i => `<div class="row">
-            <div class="row-main"><div class="row-title">${esc(i.nome)}</div>
+            <div class="row-main"><div class="row-title">${i.favorito ? '<span style="color:#fbbf24">★</span> ' : ''}${esc(i.nome)}</div>
               <div class="row-sub">${esc(i.dosagem || '')}</div></div>
             <button class="cbox" data-sos-id="${i.id}" role="checkbox" aria-checked="${estado.sos.includes(i.id)}">${ICON.check}</button>
           </div>`).join('')}
@@ -582,15 +584,31 @@ export { sheetRefeicao } from './comida.js';
 /* ------------------------------------------------- item da farmácia ----- */
 
 export async function sheetItemFarmacia(item = null) {
+  const grupoInicial = item?.grupo && GRUPOS_FARMACIA.some(g => g.nome === item.grupo)
+    ? item.grupo
+    : (item?.categoria === 'suplemento' ? 'Outros suplementos'
+      : (item?.sos === true ? 'Crise / SOS' : 'Outros medicamentos'));
+  const sosInicial = item ? item.sos !== false : true;
+  const ETIQUETAS = {
+    'Crise / SOS': 'Crise / SOS (agudo)',
+    'Crónicos / prevenção': 'Crónico / prevenção',
+    'Outros medicamentos': 'Outro medicamento',
+    'Vitaminas e minerais': 'Vitamina / mineral',
+    'Ómega 3': 'Ómega 3',
+    'Outros suplementos': 'Outro suplemento',
+  };
+
   const corpo = el(`
     <div>
       <label class="fld"><span>Nome</span><input type="text" data-nome value="${esc(item?.nome || '')}" placeholder="Ex.: Triptano / Magnésio"></label>
       <label class="fld"><span>Dosagem</span><input type="text" data-dose value="${esc(item?.dosagem || '')}" placeholder="Ex.: 50 mg"></label>
-      <label class="fld"><span>Categoria</span>
-        <select data-cat>
-          <option value="medicamento"${item?.categoria === 'medicamento' ? ' selected' : ''}>Medicamento</option>
-          <option value="suplemento"${item?.categoria === 'suplemento' ? ' selected' : ''}>Suplemento</option>
+      <label class="fld"><span>Grupo</span>
+        <select data-grupo>
+          ${GRUPOS_FARMACIA.map(g => `<option value="${esc(g.nome)}"${g.nome === grupoInicial ? ' selected' : ''}>${esc(ETIQUETAS[g.nome] || g.nome)}</option>`).join('')}
         </select></label>
+      <p class="hint" style="margin-top:6px">Crise/SOS aparece na lista ao iniciar uma crise. Crónicos e suplementos ficam na farmácia e podem ter horários.</p>
+      <div class="switch mt12"><span class="switch-label">Mostrar como SOS na crise<small>aparece na lista ao iniciar uma crise</small></span>
+        <button class="track" data-sos role="switch" aria-checked="${sosInicial}"></button></div>
       <div class="section-title">Horários habituais</div>
       <div class="chips" data-hs>
         ${['08:00', '14:00', '21:00'].map(h => `<button class="chip" data-h="${h}"
@@ -614,6 +632,14 @@ export async function sheetItemFarmacia(item = null) {
     b.setAttribute('aria-pressed', horas.has(h));
   });
 
+  const grupoSel = corpo.querySelector('[data-grupo]');
+  const sosBtn = corpo.querySelector('[data-sos]');
+  sosBtn.onclick = () => sosBtn.setAttribute('aria-checked', sosBtn.getAttribute('aria-checked') !== 'true');
+  grupoSel.addEventListener('change', () => {
+    if (grupoSel.value === 'Crise / SOS') sosBtn.setAttribute('aria-checked', 'true');
+    else if (!item) sosBtn.setAttribute('aria-checked', 'false');
+  });
+
   const { fechar } = sheet({
     titulo: item ? 'Editar item' : 'Novo item', corpo,
     acoes: `<button class="btn btn-ghost" data-fechar>Cancelar</button><button class="btn btn-primary" data-gravar>Guardar</button>`,
@@ -622,10 +648,17 @@ export async function sheetItemFarmacia(item = null) {
   corpo.closest('.sheet').querySelector('[data-gravar]').onclick = async () => {
     const nome = corpo.querySelector('[data-nome]').value.trim();
     if (!nome) { toast('Indique o nome', 'err'); return; }
+    const grupo = grupoSel.value;
+    const info = GRUPOS_FARMACIA.find(g => g.nome === grupo) || GRUPOS_FARMACIA[2];
+    const sos = grupo === 'Crise / SOS'
+      ? true
+      : sosBtn.getAttribute('aria-checked') === 'true';
     await salvarItem({
       ...(item || {}), nome,
       dosagem: corpo.querySelector('[data-dose]').value.trim(),
-      categoria: corpo.querySelector('[data-cat]').value,
+      categoria: info.categoria,
+      grupo,
+      sos,
       tomarAs: [...horas].sort(),
     });
     toast('Farmácia atualizada'); fechar(); refresh();

@@ -318,55 +318,123 @@ export async function removerAfrontamento(data, id) {
 
 export const CATEGORIAS = { medicamento: 'Medicamento', suplemento: 'Suplemento' };
 
+/** Grupos da farmácia, na ordem em que aparecem no ecrã. */
+export const GRUPOS_FARMACIA = [
+  { nome: 'Crise / SOS', categoria: 'medicamento' },
+  { nome: 'Crónicos / prevenção', categoria: 'medicamento' },
+  { nome: 'Outros medicamentos', categoria: 'medicamento' },
+  { nome: 'Vitaminas e minerais', categoria: 'suplemento' },
+  { nome: 'Ómega 3', categoria: 'suplemento' },
+  { nome: 'Outros suplementos', categoria: 'suplemento' },
+];
+
 /**
- * Sugestões iniciais de medicação aguda para enxaqueca. São apenas pontos de
- * partida editáveis: a dose e a indicação têm de ser confirmadas com o médico
- * ou farmacêutico. Não têm horários fixos (são de uso SOS).
+ * Sugestões iniciais. São apenas pontos de partida editáveis: a dose e a
+ * indicação têm de ser confirmadas com o médico ou farmacêutico. Nenhuma tem
+ * horários fixos — as de crise são SOS e as crónicas/suplementos esperam que
+ * a pessoa defina o horário.
  */
+const AGUDO = (nome, dosagem) =>
+  ({ nome, dosagem, grupo: 'Crise / SOS', categoria: 'medicamento', sos: true });
+const CRONICO = (nome, dosagem) =>
+  ({ nome, dosagem, grupo: 'Crónicos / prevenção', categoria: 'medicamento', sos: false });
+const SUPLEMENTO = (nome, dosagem, grupo) =>
+  ({ nome, dosagem, grupo, categoria: 'suplemento', sos: false });
+
 export const MEDICACAO_ENXAQUECA = [
-  { nome: 'Aspirina', dosagem: '1000 mg' },
-  { nome: 'Aspegic', dosagem: '1000 mg' },
-  { nome: 'Zolmitriptano', dosagem: '5 mg' },
-  { nome: 'Naproxeno', dosagem: '500 mg' },
-  { nome: 'Ibuprofeno', dosagem: '400 mg' },
-  { nome: 'Paracetamol', dosagem: '1000 mg' },
-  { nome: 'Sumatriptano', dosagem: '50 mg' },
-  { nome: 'Eletriptano', dosagem: '40 mg' },
-  { nome: 'Rizatriptano', dosagem: '10 mg' },
-  { nome: 'Metoclopramida', dosagem: '10 mg' },
-  { nome: 'Domperidona', dosagem: '10 mg' },
-  { nome: 'Diclofenac', dosagem: '50 mg' },
+  AGUDO('Aspirina', '1000 mg'),
+  AGUDO('Aspegic', '1000 mg'),
+  AGUDO('Zolmitriptano', '5 mg'),
+  AGUDO('Naproxeno', '500 mg'),
+  AGUDO('Ibuprofeno', '400 mg'),
+  AGUDO('Paracetamol', '1000 mg'),
+  AGUDO('Sumatriptano', '50 mg'),
+  AGUDO('Eletriptano', '40 mg'),
+  AGUDO('Rizatriptano', '10 mg'),
+  AGUDO('Metoclopramida', '10 mg'),
+  AGUDO('Domperidona', '10 mg'),
+  AGUDO('Diclofenac', '50 mg'),
+];
+
+/** Exemplos de prevenção crónica; as doses são pontos de partida. */
+export const MEDICACAO_CRONICA = [
+  CRONICO('Amitriptilina', '10 mg'),
+  CRONICO('Propranolol', '40 mg'),
+  CRONICO('Topiramato', '25 mg'),
+  CRONICO('Candesartan', '8 mg'),
+  CRONICO('Flunarizina', '5 mg'),
+  CRONICO('Bisoprolol', '5 mg'),
+];
+
+export const SUPLEMENTOS_COMUNS = [
+  SUPLEMENTO('Vitamina D3', '1000 UI', 'Vitaminas e minerais'),
+  SUPLEMENTO('Magnésio bisglicinato', '200 mg', 'Vitaminas e minerais'),
+  SUPLEMENTO('Vitamina B2', '400 mg', 'Vitaminas e minerais'),
+  SUPLEMENTO('Vitamina C', '500 mg', 'Vitaminas e minerais'),
+  SUPLEMENTO('Zinco', '10 mg', 'Vitaminas e minerais'),
+  SUPLEMENTO('Multivitamínico', '1 comprimido', 'Vitaminas e minerais'),
+  SUPLEMENTO('Ómega 3', '1000 mg', 'Ómega 3'),
+  SUPLEMENTO('Coenzima Q10', '100 mg', 'Outros suplementos'),
+  SUPLEMENTO('Melatonina', '3 mg', 'Outros suplementos'),
+  SUPLEMENTO('Probióticos', '1 cápsula', 'Outros suplementos'),
 ];
 
 const CHAVE_MEDICACAO = 'medicacaoEnxaquecaSemeada';
+const CHAVE_EXTRA = 'medicacaoSugeridaV2';
+const nomeChave = (s) => String(s || '').trim().toLocaleLowerCase('pt');
+const TODAS_SUGESTOES = [...MEDICACAO_ENXAQUECA, ...MEDICACAO_CRONICA, ...SUPLEMENTOS_COMUNS];
 
-/**
- * Adiciona uma única vez as sugestões que ainda não existam na farmácia.
- * Nunca repõe itens que a pessoa tenha apagado (a marca fica em `meta`).
- */
-export async function semearMedicacaoComum() {
-  const feito = await get('meta', CHAVE_MEDICACAO).catch(() => null);
-  if (feito) return 0;
-  const existentes = await all('itemMedicacao').catch(() => []);
-  const nomes = new Set(existentes.map(i => String(i.nome || '').trim().toLocaleLowerCase('pt')));
+async function inserirSugestoes(lista, existentes) {
+  const nomes = new Set(existentes.map(i => nomeChave(i.nome)));
   let n = 0;
-  for (const m of MEDICACAO_ENXAQUECA) {
-    if (nomes.has(m.nome.toLocaleLowerCase('pt'))) continue;
+  for (const m of lista) {
+    if (nomes.has(nomeChave(m.nome))) continue;
     await put('itemMedicacao', {
       id: uid(),
       nome: m.nome,
       dosagem: m.dosagem,
-      categoria: 'medicamento',
+      categoria: m.categoria,
+      grupo: m.grupo,
       tomarAs: [],
       ativo: true,
-      sos: true,
+      sos: !!m.sos,
       sugerido: true,
       criado: isoOf(),
     });
+    nomes.add(nomeChave(m.nome));
     n++;
   }
-  await put('meta', { k: CHAVE_MEDICACAO, v: isoOf() });
   return n;
+}
+
+/**
+ * Adiciona uma única vez as sugestões que ainda não existam na farmácia.
+ * Nunca repõe itens que a pessoa tenha apagado (as marcas ficam em `meta`).
+ * A lista de crise já existia na v19; a v20 acrescenta crónicos e suplementos.
+ */
+export async function semearMedicacaoComum() {
+  let total = 0;
+  const v1 = await get('meta', CHAVE_MEDICACAO).catch(() => null);
+  if (!v1) {
+    total += await inserirSugestoes(MEDICACAO_ENXAQUECA, await all('itemMedicacao').catch(() => []));
+    await put('meta', { k: CHAVE_MEDICACAO, v: isoOf() });
+  }
+
+  // migra as sugestões antigas (v19) que ainda não têm grupo
+  const todos = await all('itemMedicacao').catch(() => []);
+  for (const i of todos) {
+    if (!i.sugerido || i.grupo) continue;
+    const def = TODAS_SUGESTOES.find(m => nomeChave(m.nome) === nomeChave(i.nome));
+    if (!def) continue;
+    await put('itemMedicacao', { ...i, grupo: def.grupo, categoria: def.categoria, sos: !!def.sos });
+  }
+
+  const v2 = await get('meta', CHAVE_EXTRA).catch(() => null);
+  if (!v2) {
+    total += await inserirSugestoes([...MEDICACAO_CRONICA, ...SUPLEMENTOS_COMUNS], await all('itemMedicacao').catch(() => []));
+    await put('meta', { k: CHAVE_EXTRA, v: isoOf() });
+  }
+  return total;
 }
 
 export async function farmacia() {
@@ -385,6 +453,15 @@ export async function salvarItem(item) {
 }
 
 export const apagarItem = (id) => del('itemMedicacao', id);
+
+/** Marca/desmarca um item como favorito (estrela). */
+export async function alternarFavorito(id) {
+  const item = await get('itemMedicacao', id);
+  if (!item) return null;
+  item.favorito = !item.favorito;
+  await put('itemMedicacao', item);
+  return item;
+}
 
 /** Regista (ou retira) a toma de um item numa hora. Um clique = uma toma. */
 export async function toggleToma(itemId, quando = new Date()) {

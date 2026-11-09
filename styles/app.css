@@ -137,6 +137,8 @@ body {
 .icon-btn:hover { color: var(--text); background: var(--surface-2); border-color: var(--stroke-strong); }
 .icon-btn:active { transform: scale(.94); }
 .icon-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn.star[aria-pressed="true"] { color: #fbbf24; }
+.icon-btn.star[aria-pressed="true"] svg { fill: #fbbf24; stroke: #fbbf24; }
 
 /* ---------- view ---------- */
 #view {

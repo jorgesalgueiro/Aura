@@ -255,15 +255,23 @@ Três separadores: **Farmácia**, **Hidratação** e **Alimentação**.
 
 * **Aderência de hoje** — anel com a percentagem de tomas feitas, mais tomadas, programadas, em
   falta e SOS.
-* **A tua lista** — separada em Medicamento e Suplementos. Cada item mostra um botão por
-  horário habitual; tocar marca (ou desmarca) a toma. O botão **+ agora** regista com a hora
-  exata, mesmo fora do horário.
-* **Novo item** — nome, dosagem, categoria e horários habituais (08:00, 14:00, 21:00 ou uma
-  hora à medida).
-* O lápis edita, o caixote apaga o item. **As tomas já registadas ficam** no diário.
-* Na primeira abertura desta versão, a farmácia recebe **sugestões de medicação aguda para
-  enxaqueca** (Aspirina, Aspegic, ibuprofeno, naproxeno, paracetamol, zolmitriptano, sumatriptano,
-  eletriptano, rizatriptano, metoclopramida, domperidona e diclofenac), marcadas como **uso SOS**.
+* **A tua lista** — organizada em **Favoritos**, **Crise / SOS**, **Crónicos / prevenção**,
+  **Vitaminas e minerais**, **Ómega 3** e **Outros**. A **estrela** marca ou desmarca favoritos:
+  ficam no topo da farmácia e aparecem **primeiro na lista SOS** ao iniciar uma crise. Cada item
+  mostra um botão por horário habitual; tocar marca (ou desmarca) a toma. O botão **+ agora**
+  regista com a hora exata, mesmo fora do horário.
+* **Novo item** — nome, dosagem, **grupo** (crise/SOS, crónico, vitamina/mineral, ómega 3 ou
+  outro), interruptor **Mostrar como SOS na crise** e horários habituais (08:00, 14:00, 21:00 ou
+  uma hora à medida).
+* O lápis edita, o caixote apaga o item, a estrela escolhe os favoritos. **As tomas já registadas
+  ficam** no diário.
+* Na primeira abertura desta versão, a farmácia recebe **sugestões editáveis**:
+  * **Crise / SOS** — Aspirina, Aspegic, ibuprofeno, naproxeno, paracetamol, zolmitriptano,
+    sumatriptano, eletriptano, rizatriptano, metoclopramida, domperidona e diclofenac.
+  * **Crónicos / prevenção** — exemplos de amitriptilina, propranolol, topiramato, candesartan,
+    flunarizina e bisoprolol. Se tomares outros crónicos, cria-os em **Novo item**.
+  * **Suplementos** — vitamina D3, magnésio bisglicinato, ómega 3, vitamina B2, coenzima Q10,
+    melatonina, probióticos, multivitamínico, vitamina C e zinco.
   São apenas sugestões: **confirma sempre a dose e a indicação com o médico ou farmacêutico** e
   edita ou apaga o que não usares. Não voltam a ser adicionadas depois de apagadas.
 

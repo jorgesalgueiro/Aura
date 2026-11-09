@@ -26,8 +26,8 @@ node tools/empacotar.mjs
 | Saída | Para quê |
 |---|---|
 | `dist/site/` | pasta pronta a publicar |
-| `dist/aura-v19.zip` | arrastar para um hosting estático |
-| `dist/aura-v19.tar.gz` | copiar para um servidor / imagem Docker |
+| `dist/aura-v20.zip` | arrastar para um hosting estático |
+| `dist/aura-v20.tar.gz` | copiar para um servidor / imagem Docker |
 | `dist/BUILD.json` | versão + hash do conteúdo (para comparar builds) |
 
 O script confirma primeiro que todos os ficheiros listados no `SHELL` do service worker
@@ -35,7 +35,7 @@ existem — um deploy com um ficheiro em falta falha aqui, não no telefone. No 
 build com o `dist/BUILD.json` anterior e avisa se os ficheiros mudaram sem o `VERSAO` subir:
 
 ```
-⚠  Os ficheiros mudaram mas o VERSAO continua aura-v19.
+⚠  Os ficheiros mudaram mas o VERSAO continua aura-v20.
    Quem já tem a app instalada não recebe esta alteração — avance o VERSAO em sw.js.
 ```
 
@@ -125,9 +125,12 @@ desligar o Garmin.
 `limparDadosPessoais()` apaga registos diários, crises, fezes, tomas e refeições; mantém a base
 de medicação, os alimentos personalizados, as definições e a cache de clima.
 
-`semearMedicacaoComum()` corre uma vez no arranque e adiciona sugestões de medicação aguda para
-enxaqueca que ainda não existam na farmácia. A marca `meta/medicacaoEnxaquecaSemeada` impede que
-voltem depois de apagadas. São itens normais da farmácia, com `sos: true` e sem horários fixos.
+`semearMedicacaoComum()` corre no arranque e adiciona uma vez as sugestões que ainda não existam
+na farmácia: a lista de crise/SOS (v19), depois os exemplos crónicos e os suplementos (v20). As
+marcas `meta/medicacaoEnxaquecaSemeada` e `meta/medicacaoSugeridaV2` impedem que voltem depois de
+apagadas. Cada item tem `grupo` (`Crise / SOS`, `Crónicos / prevenção`, `Vitaminas e minerais`,
+`Ómega 3`, `Outros suplementos` ou `Outros medicamentos`), `sos` e, quando o utilizador escolhe,
+`favorito`. Os favoritos aparecem no topo da farmácia e primeiro na lista SOS.
 
 ### Cópia encriptada (`.aura`)
 
@@ -199,7 +202,7 @@ for (const c of await caches.keys()) await caches.delete(c);
 location.reload();
 ```
 
-Ao mexer em qualquer ficheiro do `SHELL` de `sw.js`, avança `VERSAO` (`aura-v19` agora) para
+Ao mexer em qualquer ficheiro do `SHELL` de `sw.js`, avança `VERSAO` (`aura-v20` agora) para
 que as instalações existentes revalidem de uma vez. A app mostra "Nova versão disponível — a
 atualizar…" e recarrega sozinha quando o novo worker ativa.
 

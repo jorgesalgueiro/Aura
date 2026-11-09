@@ -457,7 +457,7 @@ async function arrancar() {
   if (location.hash) { route.tab = inicial.tab; route.sub = inicial.sub; }
   marcarAba();
   await desenhar();
-  if (medsNovos) toast(`${medsNovos} medicamentos comuns para enxaqueca adicionados à Farmácia`, 'ok', 5000);
+  if (medsNovos) toast(`${medsNovos} sugestões de medicação e suplementos adicionadas à Farmácia`, 'ok', 5000);
   // num deep link para os relatórios de 90 dias, a série precisa de mais dias
   await atualizarClima({ diasAtras: route.tab === 'relatorios' && +route.sub > 45 ? +route.sub : 45 });
 

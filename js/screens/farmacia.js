@@ -7,6 +7,7 @@
 import {
   diaKey, getDia, patchDia, hhmm, settings, saveSettings,
   farmacia, apagarItem, toggleToma, tomasDoDia, refeicoes, crises, dias, diasComDados,
+  GRUPOS_FARMACIA, alternarFavorito,
 } from '../store.js';
 import { esc, fmt, dataLonga, ICON, on, haptic, toast, sheet, el } from '../utils.js';
 import { anel, barrasHorizontais, chartRelacao } from '../charts.js';
@@ -57,41 +58,81 @@ async function seccaoFarmacia() {
 
   _memoria = Object.assign(_memoria || {}, { itens, tomas });
 
-  const grupos = ['medicamento', 'suplemento'].map(cat => {
-    const doGrupo = ativos.filter(i => (i.categoria || 'medicamento') === cat);
-    if (!doGrupo.length) return '';
-    return `
-      <div class="section">
-        <div class="section-title">${cat === 'medicamento' ? 'Medicamento' : 'Suplementos'}
-          <span class="badge blue">${doGrupo.length}</span></div>
-        ${cat === 'medicamento' && doGrupo.some(i => i.sugerido)
-          ? `<p class="hint" style="margin:-4px 0 10px">Sugestões iniciais para crise de enxaqueca. Não é aconselhamento médico: confirma a dose e a indicação com o médico ou farmacêutico. Podes editar ou apagar.</p>`
-          : ''}
-        <div class="list">
-          ${doGrupo.map(i => {
-            const hs = i.tomarAs && i.tomarAs.length ? i.tomarAs : null;
-            return `<div class="row">
-              <span class="row-ico" style="background:rgba(45,212,191,.14);color:var(--cyan)">${ICON.pilula}</span>
-              <div class="row-main">
-                <div class="row-title">${esc(i.nome)}${i.dosagem ? ` <small class="muted">${esc(i.dosagem)}</small>` : ''}</div>
-                <div class="chips mt8">
-                  ${hs ? hs.map(h => `<button class="chip" data-toma="${esc(i.id)}" data-h="${esc(h)}"
-                      aria-pressed="${tomou(i.id, h)}" title="Marcar ou limpar a toma das ${esc(h)}">${esc(h)}${tomou(i.id, h) ? ' ✓' : ''}</button>`).join('')
-                    : (i.sos ? '<span class="muted" style="font-size:12px">uso SOS — sem horário fixo</span>'
-                      : '<span class="muted" style="font-size:12px">sem horários — edite para definir</span>')}
-                  <button class="chip" data-toma="${esc(i.id)}" data-agora="1"
-                    aria-pressed="${tomas.some(t => t.itemId === i.id)}">+ agora</button>
-                </div>
-              </div>
-              <div class="row-end">
-                <button class="icon-btn" data-editar="${esc(i.id)}" aria-label="Editar ${esc(i.nome)}">${ICON.lapis}</button>
-                <button class="icon-btn" data-apagar="${esc(i.id)}" aria-label="Apagar ${esc(i.nome)}">${ICON.lixo}</button>
-              </div>
-            </div>`;
-          }).join('')}
+  const grupoDe = (i) => {
+    if (i.grupo && GRUPOS_FARMACIA.some(g => g.nome === i.grupo)) return i.grupo;
+    if (i.categoria === 'suplemento') return 'Outros suplementos';
+    return i.sos ? 'Crise / SOS' : 'Outros medicamentos';
+  };
+
+  const linhaItem = (i) => {
+    const hs = i.tomarAs && i.tomarAs.length ? i.tomarAs : null;
+    const semHorario = i.sos
+      ? 'uso SOS — sem horário fixo'
+      : i.grupo === 'Crónicos / prevenção'
+        ? 'crónico — defina o horário'
+        : i.categoria === 'suplemento'
+          ? 'suplemento — defina o horário'
+          : 'sem horários — edite para definir';
+    return `<div class="row">
+      <span class="row-ico" style="background:rgba(45,212,191,.14);color:var(--cyan)">${ICON.pilula}</span>
+      <div class="row-main">
+        <div class="row-title">${esc(i.nome)}${i.dosagem ? ` <small class="muted">${esc(i.dosagem)}</small>` : ''}</div>
+        <div class="chips mt8">
+          ${hs ? hs.map(h => `<button class="chip" data-toma="${esc(i.id)}" data-h="${esc(h)}"
+              aria-pressed="${tomou(i.id, h)}" title="Marcar ou limpar a toma das ${esc(h)}">${esc(h)}${tomou(i.id, h) ? ' ✓' : ''}</button>`).join('')
+            : `<span class="muted" style="font-size:12px">${semHorario}</span>`}
+          <button class="chip" data-toma="${esc(i.id)}" data-agora="1"
+            aria-pressed="${tomas.some(t => t.itemId === i.id)}">+ agora</button>
         </div>
+      </div>
+      <div class="row-end">
+        <button class="icon-btn star" data-favorito="${esc(i.id)}" aria-pressed="${!!i.favorito}"
+          aria-label="${i.favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}" title="Favorito">${ICON.estrela}</button>
+        <button class="icon-btn" data-editar="${esc(i.id)}" aria-label="Editar ${esc(i.nome)}">${ICON.lapis}</button>
+        <button class="icon-btn" data-apagar="${esc(i.id)}" aria-label="Apagar ${esc(i.nome)}">${ICON.lixo}</button>
+      </div>
+    </div>`;
+  };
+
+  const favoritos = ativos.filter(i => i.favorito);
+  const porGrupo = new Map();
+  for (const i of ativos.filter(i => !i.favorito)) {
+    const g = grupoDe(i);
+    if (!porGrupo.has(g)) porGrupo.set(g, []);
+    porGrupo.get(g).push(i);
+  }
+  const ordem = GRUPOS_FARMACIA.map(g => g.nome);
+  const DICAS = {
+    'Crise / SOS': 'Sugestões iniciais para crise de enxaqueca. Não é aconselhamento médico: confirma a dose e a indicação com o médico ou farmacêutico. Podes editar ou apagar.',
+    'Crónicos / prevenção': 'Exemplos de medicação crónica de prevenção. Ajusta a dose à tua receita e define o horário se quiseres marcar tomas.',
+    'Vitaminas e minerais': 'Suplementos comuns. Confirma a dose e a necessidade com o médico ou farmacêutico; define o horário se quiseres marcar tomas.',
+    'Ómega 3': 'Suplementos comuns. Confirma a dose e a necessidade com o médico ou farmacêutico; define o horário se quiseres marcar tomas.',
+    'Outros suplementos': 'Suplementos comuns. Confirma a dose e a necessidade com o médico ou farmacêutico; define o horário se quiseres marcar tomas.',
+  };
+
+  const favoritosHTML = favoritos.length ? `
+    <div class="section">
+      <div class="section-title">Favoritos <span class="badge amber">${favoritos.length}</span></div>
+      <p class="hint" style="margin:-4px 0 10px">Aparecem primeiro ao iniciar uma crise.</p>
+      ${favoritos.some(i => i.sugerido) ? '<p class="hint" style="margin:-4px 0 10px">Confirma sempre a dose e a indicação com o médico ou farmacêutico.</p>' : ''}
+      <div class="list">${favoritos.map(linhaItem).join('')}</div>
+    </div>` : '';
+
+  const grupos = [...porGrupo.entries()]
+    .sort((a, b) => {
+      const ia = ordem.indexOf(a[0]), ib = ordem.indexOf(b[0]);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    })
+    .map(([nome, doGrupo]) => {
+      const classe = nome === 'Crise / SOS' ? 'amber' : nome === 'Crónicos / prevenção' ? 'blue' : 'green';
+      return `<div class="section">
+        <div class="section-title">${esc(nome)}
+          <span class="badge ${classe}">${doGrupo.length}</span></div>
+        ${doGrupo.some(i => i.sugerido) && DICAS[nome]
+          ? `<p class="hint" style="margin:-4px 0 10px">${esc(DICAS[nome])}</p>` : ''}
+        <div class="list">${doGrupo.map(linhaItem).join('')}</div>
       </div>`;
-  }).join('');
+    }).join('');
 
   const sosHoje = (await crises(1))
     .filter(c => c.data === HOJE() && (c.tomaMedicacaoIds || []).length).length;
@@ -120,14 +161,14 @@ async function seccaoFarmacia() {
       </div>
     </div>
 
-    ${grupos || ''}
+    ${favoritosHTML}${grupos || ''}
 
     ${!ativos.length ? `<div class="section">${vazio(
       'A farmácia está vazia',
       'Crie os seus medicamentos e suplementos; os horários passam a botões de um toque.',
       `<button class="btn btn-primary" data-acao="novo-item">${ICON.mais} Criar o primeiro item</button>`)}</div>` : ''}
 
-    <p class="hint mt16">Tudo fica apenas neste dispositivo. Lápis para editar, caixote do lixo para apagar.</p>`;
+    <p class="hint mt16">Tudo fica apenas neste dispositivo. Estrela para favorito, lápis para editar, caixote do lixo para apagar.</p>`;
 }
 
 /* ---------------------------------------------------------------- água ---- */
@@ -292,6 +333,15 @@ export async function bind(root) {
     const r = await toggleToma(b.dataset.toma, quando);
     haptic(r.tomado ? [10, 30, 10] : 5);
     toast(r.tomado ? `Toma marcada às ${hhmm(quando)}` : 'Toma retirada');
+    refresh();
+  });
+
+  /* favorito (estrela): aparece no topo e primeiro na crise */
+  on(root, 'click', '[data-favorito]', async (e, b) => {
+    const item = await alternarFavorito(b.dataset.favorito);
+    if (!item) return;
+    haptic(item.favorito ? 12 : 5);
+    toast(item.favorito ? 'Adicionado aos favoritos' : 'Removido dos favoritos');
     refresh();
   });
 
