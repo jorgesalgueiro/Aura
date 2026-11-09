@@ -5,6 +5,7 @@
 import { route, go, subscribe, rotaFromHash, refresh } from './nav.js';
 import {
   settings, saveSettings, exportarTudo, importarTudo, limparDadosPessoais, diaKey, isoOf,
+  semearMedicacaoComum,
 } from './store.js';
 import { el, esc, sheet, toast, ICON, on, haptic, folhaAberta } from './utils.js';
 import { clima, atualizarClima, observarClima, estadoPill } from './clima.js';
@@ -450,10 +451,13 @@ document.getElementById('btn-settings').addEventListener('click', sheetDefinicoe
 
 async function arrancar() {
   const s = await settings();
+  // uma vez por instalação: sugestões de medicação aguda para enxaqueca
+  const medsNovos = await semearMedicacaoComum().catch(() => 0);
   const inicial = rotaFromHash();
   if (location.hash) { route.tab = inicial.tab; route.sub = inicial.sub; }
   marcarAba();
   await desenhar();
+  if (medsNovos) toast(`${medsNovos} medicamentos comuns para enxaqueca adicionados à Farmácia`, 'ok', 5000);
   // num deep link para os relatórios de 90 dias, a série precisa de mais dias
   await atualizarClima({ diasAtras: route.tab === 'relatorios' && +route.sub > 45 ? +route.sub : 45 });
 

@@ -261,6 +261,11 @@ Três separadores: **Farmácia**, **Hidratação** e **Alimentação**.
 * **Novo item** — nome, dosagem, categoria e horários habituais (08:00, 14:00, 21:00 ou uma
   hora à medida).
 * O lápis edita, o caixote apaga o item. **As tomas já registadas ficam** no diário.
+* Na primeira abertura desta versão, a farmácia recebe **sugestões de medicação aguda para
+  enxaqueca** (Aspirina, Aspegic, ibuprofeno, naproxeno, paracetamol, zolmitriptano, sumatriptano,
+  eletriptano, rizatriptano, metoclopramida, domperidona e diclofenac), marcadas como **uso SOS**.
+  São apenas sugestões: **confirma sempre a dose e a indicação com o médico ou farmacêutico** e
+  edita ou apaga o que não usares. Não voltam a ser adicionadas depois de apagadas.
 
 #### Hidratação
 

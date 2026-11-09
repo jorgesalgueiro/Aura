@@ -64,6 +64,9 @@ async function seccaoFarmacia() {
       <div class="section">
         <div class="section-title">${cat === 'medicamento' ? 'Medicamento' : 'Suplementos'}
           <span class="badge blue">${doGrupo.length}</span></div>
+        ${cat === 'medicamento' && doGrupo.some(i => i.sugerido)
+          ? `<p class="hint" style="margin:-4px 0 10px">Sugestões iniciais para crise de enxaqueca. Não é aconselhamento médico: confirma a dose e a indicação com o médico ou farmacêutico. Podes editar ou apagar.</p>`
+          : ''}
         <div class="list">
           ${doGrupo.map(i => {
             const hs = i.tomarAs && i.tomarAs.length ? i.tomarAs : null;
@@ -74,7 +77,8 @@ async function seccaoFarmacia() {
                 <div class="chips mt8">
                   ${hs ? hs.map(h => `<button class="chip" data-toma="${esc(i.id)}" data-h="${esc(h)}"
                       aria-pressed="${tomou(i.id, h)}" title="Marcar ou limpar a toma das ${esc(h)}">${esc(h)}${tomou(i.id, h) ? ' ✓' : ''}</button>`).join('')
-                    : '<span class="muted" style="font-size:12px">sem horários — edite para definir</span>'}
+                    : (i.sos ? '<span class="muted" style="font-size:12px">uso SOS — sem horário fixo</span>'
+                      : '<span class="muted" style="font-size:12px">sem horários — edite para definir</span>')}
                   <button class="chip" data-toma="${esc(i.id)}" data-agora="1"
                     aria-pressed="${tomas.some(t => t.itemId === i.id)}">+ agora</button>
                 </div>

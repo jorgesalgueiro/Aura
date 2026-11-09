@@ -318,6 +318,57 @@ export async function removerAfrontamento(data, id) {
 
 export const CATEGORIAS = { medicamento: 'Medicamento', suplemento: 'Suplemento' };
 
+/**
+ * Sugestões iniciais de medicação aguda para enxaqueca. São apenas pontos de
+ * partida editáveis: a dose e a indicação têm de ser confirmadas com o médico
+ * ou farmacêutico. Não têm horários fixos (são de uso SOS).
+ */
+export const MEDICACAO_ENXAQUECA = [
+  { nome: 'Aspirina', dosagem: '1000 mg' },
+  { nome: 'Aspegic', dosagem: '1000 mg' },
+  { nome: 'Zolmitriptano', dosagem: '5 mg' },
+  { nome: 'Naproxeno', dosagem: '500 mg' },
+  { nome: 'Ibuprofeno', dosagem: '400 mg' },
+  { nome: 'Paracetamol', dosagem: '1000 mg' },
+  { nome: 'Sumatriptano', dosagem: '50 mg' },
+  { nome: 'Eletriptano', dosagem: '40 mg' },
+  { nome: 'Rizatriptano', dosagem: '10 mg' },
+  { nome: 'Metoclopramida', dosagem: '10 mg' },
+  { nome: 'Domperidona', dosagem: '10 mg' },
+  { nome: 'Diclofenac', dosagem: '50 mg' },
+];
+
+const CHAVE_MEDICACAO = 'medicacaoEnxaquecaSemeada';
+
+/**
+ * Adiciona uma única vez as sugestões que ainda não existam na farmácia.
+ * Nunca repõe itens que a pessoa tenha apagado (a marca fica em `meta`).
+ */
+export async function semearMedicacaoComum() {
+  const feito = await get('meta', CHAVE_MEDICACAO).catch(() => null);
+  if (feito) return 0;
+  const existentes = await all('itemMedicacao').catch(() => []);
+  const nomes = new Set(existentes.map(i => String(i.nome || '').trim().toLocaleLowerCase('pt')));
+  let n = 0;
+  for (const m of MEDICACAO_ENXAQUECA) {
+    if (nomes.has(m.nome.toLocaleLowerCase('pt'))) continue;
+    await put('itemMedicacao', {
+      id: uid(),
+      nome: m.nome,
+      dosagem: m.dosagem,
+      categoria: 'medicamento',
+      tomarAs: [],
+      ativo: true,
+      sos: true,
+      sugerido: true,
+      criado: isoOf(),
+    });
+    n++;
+  }
+  await put('meta', { k: CHAVE_MEDICACAO, v: isoOf() });
+  return n;
+}
+
 export async function farmacia() {
   const it = await all('itemMedicacao');
   return it.sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt'));
