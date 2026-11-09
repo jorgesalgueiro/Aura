@@ -116,7 +116,7 @@ export async function render() {
         ${atalho({ icone: 'agua', texto: 'Água', valor: `${fmt(dia.aguaMl)} ml`, accao: 'agua', vivo: dia.aguaMl > 0 && dia.aguaMl < s.objetivoAguaMl })}
         ${atalho({ icone: 'pilula', texto: 'Medicação', valor: esperadas ? `${cumpridas}/${esperadas}` : `${tomas.length} tomas`, accao: 'tomas' })}
         ${atalho({ icone: 'raio', texto: 'Iniciar crise', valor: crise ? 'em curso' : 'cronómetro', accao: 'crise', vivo: !!crise })}
-        ${atalho({ icone: 'escama', texto: 'Registo digestivo', accao: 'digestivo' })}
+        ${atalho({ icone: 'escama', texto: 'Registo intestinal', accao: 'digestivo' })}
         ${atalho({ icone: 'comida', texto: 'Refeição', valor: kcalHoje ? `${fmt(kcalHoje)} kcal` : refeicoesHoje.length ? `${refeicoesHoje.length} hoje` : '', accao: 'refeicao' })}
         ${atalho({ icone: 'cerebro', texto: 'Energia e stress', valor: dia.energia != null ? `${dia.energia}/10` : '', accao: 'estado' })}
       </div>

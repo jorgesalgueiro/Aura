@@ -11,6 +11,7 @@ import { el, esc, sheet, toast, ICON, on, haptic, folhaAberta } from './utils.js
 import { clima, atualizarClima, observarClima, estadoPill } from './clima.js';
 import { geocodar, posicaoAtual } from './weather.js';
 import { importarSaude, sheetImportar } from './health-import.js';
+import { avisarSemanalmente } from './nutricao.js';
 import {
   ligacao, ligar, desligar, sincronizar, sincronizarAgora, observarSync, estadoGarmin,
 } from './intervals.js';
@@ -458,6 +459,13 @@ async function arrancar() {
   marcarAba();
   await desenhar();
   if (medsNovos) toast(`${medsNovos} sugestões de medicação e suplementos adicionadas à Farmácia`, 'ok', 5000);
+
+  // aviso alimentar no máximo uma vez por semana (se houver dados e alertas)
+  avisarSemanalmente().then((r) => {
+    if (!r) return;
+    const n = r.alertas.length;
+    toast(`Resumo alimentar semanal: ${n} alerta${n > 1 ? 's' : ''} — vê em Farmácia → Alimentação.`, 'warn', 6500);
+  }).catch(() => {});
   // num deep link para os relatórios de 90 dias, a série precisa de mais dias
   await atualizarClima({ diasAtras: route.tab === 'relatorios' && +route.sub > 45 ? +route.sub : 45 });
 

@@ -26,8 +26,8 @@ node tools/empacotar.mjs
 | Saída | Para quê |
 |---|---|
 | `dist/site/` | pasta pronta a publicar |
-| `dist/aura-v20.zip` | arrastar para um hosting estático |
-| `dist/aura-v20.tar.gz` | copiar para um servidor / imagem Docker |
+| `dist/aura-v21.zip` | arrastar para um hosting estático |
+| `dist/aura-v21.tar.gz` | copiar para um servidor / imagem Docker |
 | `dist/BUILD.json` | versão + hash do conteúdo (para comparar builds) |
 
 O script confirma primeiro que todos os ficheiros listados no `SHELL` do service worker
@@ -35,7 +35,7 @@ existem — um deploy com um ficheiro em falta falha aqui, não no telefone. No 
 build com o `dist/BUILD.json` anterior e avisa se os ficheiros mudaram sem o `VERSAO` subir:
 
 ```
-⚠  Os ficheiros mudaram mas o VERSAO continua aura-v20.
+⚠  Os ficheiros mudaram mas o VERSAO continua aura-v21.
    Quem já tem a app instalada não recebe esta alteração — avance o VERSAO em sw.js.
 ```
 
@@ -84,6 +84,7 @@ js/charts.js          SVG desenhados à mão: linhas, barras, dispersão, bandas
 js/health-import.js   export.xml do Saúde + CSV do Garmin, com pré-visualização
 js/alimentos.js       Open Food Facts, cache de produtos e alimentos personalizados
 js/alimentos-comuns.js tabela local de alimentos comuns (pesquisa offline)
+js/nutricao.js        grupos alimentares, análise dos últimos 7 dias e aviso semanal
 js/scanner.js         leitura de códigos de barras com a câmara (Quagga2)
 js/vendor/quagga.min.js  Quagga2 1.8.4 (MIT), leitor EAN/UPC local
 js/intervals.js       Garmin automático: API do Intervals.icu e regras de fusão
@@ -107,7 +108,13 @@ Esquema espelho 1:1 do SwiftData do plano: `RegistoDiario` (chave = data, com hi
 estado, notas e `afrontamentos`), `RegistoEnxaqueca`, `RegistoFezes`, `ItemMedicacao`, mais
 `TomaMedicacao`, `Refeicao` (com `itens` de alimentos e total em `calorias`), `AlimentoCache`
 (produtos do Open Food Facts já consultados), `AlimentoCustom` (alimentos criados pelo
-utilizador), `PressaoCache` e `Meta`.
+utilizador e pratos compostos, com `tipo: 'prato'`), `PressaoCache` e `Meta`.
+
+Cada item de refeição guarda `grupoAnalise` (o grupo usado no resumo alimentar) e, nos pratos,
+`composicao` com as frações dos ingredientes. A análise em `js/nutricao.js` usa esses dados;
+alimentos antigos sem grupo são classificados por nome. O resumo compara a média dos dias com
+refeições com referências genéricas (hortícolas, fruta, cereais, proteínas, laticínios, gorduras
+e doces/processados) e só alerta com pelo menos 3 dias e 50% dos alimentos classificados.
 
 Tudo vive em **IndexedDB**, na origem (esquema + domínio + porta) onde a app corre. Não há
 servidor, conta, analítica nem sincronização entre dispositivos. Os únicos pedidos de rede são
@@ -202,7 +209,7 @@ for (const c of await caches.keys()) await caches.delete(c);
 location.reload();
 ```
 
-Ao mexer em qualquer ficheiro do `SHELL` de `sw.js`, avança `VERSAO` (`aura-v20` agora) para
+Ao mexer em qualquer ficheiro do `SHELL` de `sw.js`, avança `VERSAO` (`aura-v21` agora) para
 que as instalações existentes revalidem de uma vez. A app mostra "Nova versão disponível — a
 atualizar…" e recarrega sozinha quando o novo worker ativa.
 

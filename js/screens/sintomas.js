@@ -1,5 +1,5 @@
 /* ==========================================================================
-   screens/sintomas.js — Aba 2 · Diário · Enxaquecas · Digestivo · Estado
+   screens/sintomas.js — Aba 2 · Diário · Enxaquecas · Intestinal · Estado
    (Ecrãs 2, 3 e 5 do plano, reunidos num único módulo com separadores)
    ========================================================================== */
 
@@ -19,14 +19,14 @@ import { route, go, refresh } from '../nav.js';
 const SUBS = [
   { id: 'diario',     nome: 'Diário' },
   { id: 'enxaquecas', nome: 'Enxaquecas' },
-  { id: 'digestivo',  nome: 'Digestivo' },
+  { id: 'digestivo',  nome: 'Intestinal' },
   { id: 'estado',     nome: 'Estado' },
 ];
 
 const TITULOS = {
   diario: 'Diário do dia',
   enxaquecas: 'Enxaquecas',
-  digestivo: 'Digestivo e sintomas',
+  digestivo: 'Intestinal e sintomas',
   estado: 'Estado geral e stress',
 };
 const SUBTITULOS = {
@@ -36,7 +36,7 @@ const SUBTITULOS = {
   estado: 'Energia e stress em dois deslizadores · notas livres',
 };
 
-let _data = diaKey();     // dia em edição (Diário, Digestivo, Estado)
+let _data = diaKey();     // dia em edição (Diário, Intestinal, Estado)
 let _memoria = null;      // dados do último render, reutilizados pelo bind()
 
 const zonaNome = (id) => (ZONAS_CABECA.find(z => z.id === id) || { nome: id }).nome;
@@ -144,7 +144,7 @@ async function diario() {
         <textarea data-notas placeholder="Ex.: dia de muito trabalho, ecrãs até tarde, acordei com pressão no topo da cabeça…">${esc(dia.notas || '')}</textarea></label>
       <div class="grid2">
         ${_data === diaKey() ? `<button class="btn btn-sm" data-acao="crise">${ICON.cabeca} Enxaqueca</button>` : ''}
-        <button class="btn btn-sm" data-acao="digestivo">${ICON.escama} Registo digestivo</button>
+        <button class="btn btn-sm" data-acao="digestivo">${ICON.escama} Registo intestinal</button>
         <button class="btn btn-sm" data-acao="refeicao">${ICON.comida} Refeição</button>
         <button class="btn btn-sm" data-acao="agua">${ICON.agua} Água</button>
         <button class="btn btn-sm" data-acao="tomas">${ICON.pilula} Tomar medicação</button>
@@ -210,7 +210,7 @@ async function enxaquecas() {
   };
 }
 
-/* ------------------------------------------------------ 3 · Digestivo -- */
+/* ------------------------------------------------------ 3 · Intestinal -- */
 
 async function digestivo() {
   const [dia, fs] = await Promise.all([getDia(_data), registosFezes(60)]);
@@ -229,7 +229,7 @@ async function digestivo() {
         ${f.hemorroides && f.hemorroides.desconforto ? `<span class="badge amber">desconforto ${f.hemorroides.desconforto}/10</span>` : ''}
       </div>
     </div>`;
-  }).join('') : vazio('Sem registos digestivos', 'A escala de Bristol (1–7) e os afrontamentos ficam aqui guardados.');
+  }).join('') : vazio('Sem registos intestinais', 'A escala de Bristol (1–7) e os afrontamentos ficam aqui guardados.');
 
   return {
     html: `

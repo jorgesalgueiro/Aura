@@ -9,9 +9,10 @@
 
 import { diaKey, hhmm, adicionarRefeicao, apagarRefeicao } from '../store.js';
 import {
-  buscarProduto, pesquisarAlimentos, pesquisarLocais, sugestoes, salvarCustom, listarCustom, apagarCustom,
-  itemDe, kcalDe, guardarNaCache, fonteNome,
+  buscarProduto, pesquisarAlimentos, pesquisarLocais, sugestoes, salvarCustom, salvarPrato,
+  listarCustom, apagarCustom, itemDe, kcalDe, guardarNaCache, fonteProduto,
 } from '../alimentos.js';
+import { GRUPOS_ALIMENTARES, grupoPorNome, analisarAlimentacao, ESTADOS } from '../nutricao.js';
 import { lerCodigo, prepararScanner } from '../scanner.js';
 import { el, esc, sheet, toast, haptic, ICON, fmt, dataLonga, on } from '../utils.js';
 import { refresh } from '../nav.js';
@@ -20,15 +21,18 @@ const totalDe = (itens) => itens.reduce((a, i) => a + (Number(i.kcal) || 0), 0);
 
 /* ----------------------------------------------------------- quantidade -- */
 
-export function sheetQuantidade(produto, { aoAdicionar } = {}) {
+export function sheetQuantidade(produto, { aoAdicionar, titulo = 'Quantidade', sub = 'Adicionar à refeição' } = {}) {
   const unidade = produto.unidade || 'g';
   const inicial = produto.dose || 100;
+  const grupoInicial = GRUPOS_ALIMENTARES.some(g => g.id === produto.grupoAnalise)
+    ? produto.grupoAnalise
+    : grupoPorNome(produto.nome);
   const corpo = el(`
     <div>
       <div class="metric-label">${esc(produto.marca || 'Alimento')}</div>
       <div style="font-size:18px;font-weight:650;margin-top:2px">${esc(produto.nome)}</div>
       <p class="hint mt8">${fmt(produto.kcal100, 1)} kcal por 100 ${unidade}
-        · ${fonteNome(produto.fonte)}${produto.cache ? ' · guardado' : ''}${produto.desatualizado ? ' · cópia antiga' : ''}</p>
+        · ${fonteProduto(produto)}${produto.cache ? ' · guardado' : ''}${produto.desatualizado ? ' · cópia antiga' : ''}</p>
 
       <label class="fld mt12"><span>Quantidade (${unidade})</span>
         <input type="text" inputmode="decimal" data-qtd value="${inicial}" autocomplete="off"></label>
@@ -36,6 +40,13 @@ export function sheetQuantidade(produto, { aoAdicionar } = {}) {
         ${[50, 100, 150, 200].map(v => `<button class="chip" data-q="${v}" aria-pressed="${v === inicial}">${v} ${unidade}</button>`).join('')}
         ${produto.dose ? `<button class="chip" data-q="${produto.dose}" aria-pressed="${produto.dose === inicial}">1 dose · ${fmt(produto.dose)} ${unidade}</button>` : ''}
       </div>
+
+      ${produto.prato
+        ? `<p class="hint mt8">Prato com ${produto.composicao?.length || 0} ingredientes; a análise nutricional usa as proporções.</p>`
+        : `<label class="fld mt12"><span>Grupo alimentar</span>
+            <select data-grupo-alim>
+              ${GRUPOS_ALIMENTARES.map(g => `<option value="${g.id}"${g.id === grupoInicial ? ' selected' : ''}>${esc(g.nome)}</option>`).join('')}
+            </select></label>`}
 
       <div class="note mt12 center"><b data-kcal style="font-size:22px">—</b> kcal</div>
       <p class="hint" style="text-align:center">Valor estimado a partir de ${fmt(produto.kcal100, 1)} kcal/100 ${unidade}.</p>
@@ -65,7 +76,7 @@ export function sheetQuantidade(produto, { aoAdicionar } = {}) {
   });
 
   const { fechar } = sheet({
-    titulo: 'Quantidade', sub: 'Adicionar à refeição', corpo,
+    titulo, sub, corpo,
     acoes: `<button class="btn btn-ghost" data-fechar>Cancelar</button>
             <button class="btn btn-primary" data-adicionar>Adicionar</button>`,
   });
@@ -73,7 +84,8 @@ export function sheetQuantidade(produto, { aoAdicionar } = {}) {
   function guardar() {
     const kcal = kcalDe(produto, input.value);
     if (kcal == null) { toast('Indique uma quantidade entre 1 e 5000 g/ml.', 'err'); input.focus(); return; }
-    const item = itemDe(produto, input.value);
+    const grupo = produto.prato ? null : (corpo.querySelector('[data-grupo-alim]')?.value || null);
+    const item = itemDe(produto, input.value, grupo);
     if (typeof aoAdicionar === 'function') aoAdicionar(item);
     guardarNaCache(produto).catch(() => {});
     haptic([8, 30, 8]);
@@ -103,8 +115,20 @@ export async function sheetAlimentoCustom({ aoGuardar } = {}) {
       </div>
       <label class="fld"><span>Dose habitual (opcional)</span>
         <input type="number" min="1" max="5000" step="1" data-dose placeholder="Ex.: 300"></label>
+      <label class="fld"><span>Grupo alimentar</span>
+        <select data-grupo-alim>
+          ${GRUPOS_ALIMENTARES.map(g => `<option value="${g.id}"${g.id === 'outros' ? ' selected' : ''}>${esc(g.nome)}</option>`).join('')}
+        </select></label>
       <div data-custom-lista class="mt16"></div>
     </div>`);
+
+  const nomeInput = corpo.querySelector('[data-nome]');
+  const grupoSel = corpo.querySelector('[data-grupo-alim]');
+  let grupoManual = false;
+  grupoSel.addEventListener('change', () => { grupoManual = true; });
+  nomeInput.addEventListener('input', () => {
+    if (!grupoManual) grupoSel.value = grupoPorNome(nomeInput.value);
+  });
 
   const { fechar } = sheet({
     titulo: 'Novo alimento', sub: 'Valores por 100 g/ml', corpo,
@@ -116,11 +140,11 @@ export async function sheetAlimentoCustom({ aoGuardar } = {}) {
   const desenharLista = async () => {
     const lista = await listarCustom();
     listaEl.innerHTML = lista.length
-      ? `<div class="section-title">Os meus alimentos</div>
+      ? `<div class="section-title">Os meus alimentos e pratos</div>
          <div class="list">${lista.map(p => `<div class="row">
            <span class="row-ico" style="color:var(--teal)">${ICON.comida}</span>
            <div class="row-main"><div class="row-title">${esc(p.nome)}</div>
-             <div class="row-sub">${fmt(p.kcal100, 1)} kcal/100 ${p.unidade}${p.marca ? ' · ' + esc(p.marca) : ''}</div></div>
+             <div class="row-sub">${p.prato ? 'Prato · ' : ''}${fmt(p.kcal100, 1)} kcal/100 ${p.unidade}${p.marca ? ' · ' + esc(p.marca) : ''}</div></div>
            <div class="row-end"><button class="icon-btn" data-apagar-custom="${esc(p.id)}" aria-label="Apagar ${esc(p.nome)}">${ICON.lixo}</button></div>
          </div>`).join('')}</div>`
       : '';
@@ -142,6 +166,7 @@ export async function sheetAlimentoCustom({ aoGuardar } = {}) {
         kcal100: corpo.querySelector('[data-kcal100]').value,
         unidade: corpo.querySelector('[data-unidade]').value,
         dose: corpo.querySelector('[data-dose]').value,
+        grupoAnalise: grupoSel.value,
       });
       haptic([10, 40, 10]);
       toast(`“${p.nome}” guardado`);
@@ -152,6 +177,140 @@ export async function sheetAlimentoCustom({ aoGuardar } = {}) {
     }
   };
 
+  return fechar;
+}
+
+/* ---------------------------------------------------------------- prato -- */
+
+export async function sheetPrato({ aoGuardar } = {}) {
+  const ingredientes = [];
+  let resultados = [];
+  let seqBusca = 0;
+  const corpo = el(`
+    <div>
+      <label class="fld"><span>Nome do prato</span>
+        <input type="text" data-nome placeholder="Ex.: Papa de aveia com maçã e gengibre" autocomplete="off"></label>
+      <label class="fld"><span>Dose habitual (opcional)</span>
+        <input type="number" min="1" max="5000" step="1" data-dose placeholder="Ex.: 300"></label>
+      <p class="hint">O peso final é a soma dos ingredientes (1 ml ≈ 1 g); ao usar o prato indicas quanto pesaste/comeste.</p>
+
+      <div class="section-title">Adicionar ingrediente</div>
+      <div class="split" style="gap:8px">
+        <input type="search" data-busca placeholder="Procurar ingrediente (ex.: aveia)" autocomplete="off">
+        <button class="btn btn-sm" data-procurar>Procurar</button>
+      </div>
+      <div data-estado class="hint mt8" hidden></div>
+      <div data-resultados class="list mt8"></div>
+
+      <div class="section-title mt20">No prato</div>
+      <div data-lista></div>
+      <p class="hint" data-vazio style="margin:0">Ainda não há ingredientes.</p>
+      <div class="split mt12"><span class="muted">Peso total</span><b data-peso>0 g</b></div>
+      <div class="split"><span class="muted">Calorias totais</span><b data-kcal>0 kcal</b></div>
+      <div class="split"><span class="muted">Por 100 g</span><b data-kcal100>—</b></div>
+    </div>`);
+
+  const nome = corpo.querySelector('[data-nome]');
+  const dose = corpo.querySelector('[data-dose]');
+  const busca = corpo.querySelector('[data-busca]');
+  const estado = corpo.querySelector('[data-estado]');
+  const resultadosEl = corpo.querySelector('[data-resultados]');
+  const listaEl = corpo.querySelector('[data-lista]');
+  const vazio = corpo.querySelector('[data-vazio]');
+
+  const { fechar } = sheet({
+    titulo: 'Novo prato', sub: 'Receita reutilizável · valores por 100 g', corpo,
+    acoes: `<button class="btn btn-ghost" data-fechar>Cancelar</button>
+            <button class="btn btn-primary" data-guardar-prato>Guardar prato</button>`,
+  });
+
+  const mostrarEstado = (txt) => { estado.hidden = !txt; estado.textContent = txt || ''; };
+
+  const desenharResultados = () => {
+    if (!resultados.length) {
+      resultadosEl.innerHTML = '<p class="hint" style="margin:6px 0 0">Nada encontrado. Podes criar um alimento primeiro.</p>';
+      return;
+    }
+    resultadosEl.innerHTML = resultados.map((p, i) => `<div class="row tap" data-add-ing="${i}" role="button" tabindex="0">
+      <span class="row-ico" style="color:var(--teal)">${ICON.comida}</span>
+      <div class="row-main"><div class="row-title">${esc(p.nome)}</div>
+        <div class="row-sub">${p.marca ? esc(p.marca) + ' · ' : ''}${fmt(p.kcal100, 1)} kcal/100 ${p.unidade} · ${fonteProduto(p)}${p.grupoNome && !p.prato ? ' · ' + esc(p.grupoNome) : ''}</div></div>
+      <div class="row-end"><span class="badge blue">+</span></div>
+    </div>`).join('');
+  };
+
+  const desenharIngredientes = () => {
+    listaEl.innerHTML = ingredientes.map((i, n) => `<div class="row">
+      <span class="row-ico" style="color:var(--teal)">${ICON.comida}</span>
+      <div class="row-main"><div class="row-title">${esc(i.nome)}</div>
+        <div class="row-sub">${fmt(i.quantidade)} ${i.unidade} · ${fmt(i.kcal)} kcal${i.grupoNome ? ' · ' + esc(i.grupoNome) : ''}</div></div>
+      <div class="row-end"><button class="icon-btn" data-remover-ing="${n}" aria-label="Remover ${esc(i.nome)}">${ICON.lixo}</button></div>
+    </div>`).join('');
+    vazio.hidden = ingredientes.length > 0;
+    const peso = ingredientes.reduce((a, i) => a + (Number(i.quantidade) || 0), 0);
+    const kcal = ingredientes.reduce((a, i) => a + (Number(i.kcal) || 0), 0);
+    corpo.querySelector('[data-peso]').textContent = `${fmt(peso)} g`;
+    corpo.querySelector('[data-kcal]').textContent = `${fmt(kcal)} kcal`;
+    corpo.querySelector('[data-kcal100]').textContent = peso > 0 ? `${fmt((kcal / peso) * 100, 1)} kcal` : '—';
+  };
+
+  const procurar = async () => {
+    const termo = busca.value.trim();
+    if (termo.length < 2) { toast('Escreva pelo menos 2 letras.', 'warn'); busca.focus(); return; }
+    const seq = ++seqBusca;
+    const rapidos = await pesquisarLocais(termo);
+    if (seq !== seqBusca) return;
+    if (rapidos.length) { resultados = rapidos; desenharResultados(); }
+    mostrarEstado(rapidos.length ? 'a procurar também no Open Food Facts…' : 'a procurar…');
+    const r = await pesquisarAlimentos(termo);
+    if (seq !== seqBusca) return;
+    const vistos = new Set();
+    resultados = [...r.locais, ...r.remotos].filter(p => {
+      const k = p.codigo || `${p.nome}|${p.marca}`;
+      if (vistos.has(k)) return false;
+      vistos.add(k);
+      return true;
+    }).slice(0, 30);
+    mostrarEstado(r.offline
+      ? `${r.erro || 'Sem ligação ao Open Food Facts.'}${resultados.length ? ' A mostrar a tabela local.' : ' Sem resultados locais.'}`
+      : (resultados.length ? `${resultados.length} resultados` : 'Nada encontrado.'));
+    desenharResultados();
+  };
+
+  sugestoes().then((s) => { if (seqBusca === 0) { resultados = s; desenharResultados(); } }).catch(() => {});
+  corpo.querySelector('[data-procurar]').onclick = procurar;
+  busca.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); procurar(); }
+  });
+  on(corpo, 'click', '[data-add-ing]', (e, b) => {
+    const p = resultados[+b.dataset.addIng];
+    if (!p) return;
+    sheetQuantidade(p, {
+      titulo: 'Ingrediente', sub: 'Quantidade no prato',
+      aoAdicionar: (item) => { ingredientes.push(item); desenharIngredientes(); },
+    });
+  });
+  on(corpo, 'keydown', '[data-add-ing]', (e, b) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); }
+  });
+  on(corpo, 'click', '[data-remover-ing]', (e, b) => {
+    ingredientes.splice(+b.dataset.removerIng, 1);
+    desenharIngredientes();
+  });
+
+  corpo.closest('.sheet').querySelector('[data-guardar-prato]').onclick = async () => {
+    try {
+      const p = await salvarPrato({ nome: nome.value, itens: ingredientes, dose: dose.value });
+      haptic([10, 40, 10]);
+      toast(`“${p.nome}” guardado`);
+      fechar();
+      if (typeof aoGuardar === 'function') aoGuardar(p);
+    } catch (e) {
+      toast(e.message || 'Não foi possível guardar o prato', 'err');
+    }
+  };
+
+  desenharIngredientes();
   return fechar;
 }
 
@@ -175,6 +334,7 @@ export async function sheetRefeicao({ data = diaKey() } = {}) {
           <button class="btn btn-sm" data-procurar>Procurar</button>
           <button class="btn btn-sm btn-ghost" data-toggle-codigo>Código de barras</button>
           <button class="btn btn-sm btn-ghost" data-custom>Novo alimento</button>
+          <button class="btn btn-sm btn-ghost" data-prato>Novo prato</button>
         </div>
         <div data-codigo-wrap hidden class="mt8">
           <div class="split" style="gap:8px">
@@ -250,7 +410,7 @@ export async function sheetRefeicao({ data = diaKey() } = {}) {
       <span class="row-ico" style="color:var(--teal)">${ICON.comida}</span>
       <div class="row-main">
         <div class="row-title">${esc(p.nome)}</div>
-        <div class="row-sub">${p.marca ? esc(p.marca) + ' · ' : ''}${fmt(p.kcal100, 1)} kcal/100 ${p.unidade} · ${fonteNome(p.fonte)}</div>
+        <div class="row-sub">${p.marca ? esc(p.marca) + ' · ' : ''}${fmt(p.kcal100, 1)} kcal/100 ${p.unidade} · ${fonteProduto(p)}${p.grupoNome && !p.prato ? ' · ' + esc(p.grupoNome) : ''}</div>
       </div>
       <div class="row-end"><span class="badge blue">+</span></div>
     </div>`).join('');
@@ -353,6 +513,10 @@ export async function sheetRefeicao({ data = diaKey() } = {}) {
     aoGuardar: (p) => { resultados = [p, ...resultados]; desenharResultados(); abrirQuantidade(p); },
   });
 
+  corpo.querySelector('[data-prato]').onclick = () => sheetPrato({
+    aoGuardar: (p) => { resultados = [p, ...resultados]; desenharResultados(); abrirQuantidade(p); },
+  });
+
   on(corpo, 'click', '[data-add-res]', (e, b) => {
     const p = resultados[+b.dataset.addRes];
     if (p) abrirQuantidade(p);
@@ -442,6 +606,49 @@ export function sheetRefeicaoDetalhe(r) {
     fechar();
     refresh();
   };
+
+  return fechar;
+}
+
+/* ------------------------------------------------------ resumo semanal -- */
+
+export async function sheetResumoAlimentar() {
+  const r = await analisarAlimentacao(7);
+  const grupos = r.grupos.filter(g => g.min != null);
+  const linhas = grupos.map(g => {
+    const e = ESTADOS[g.estado] || ESTADOS['sem-dados'];
+    const ref = g.max == null ? `≥ ${g.min} g` : `${g.min}–${g.max} g`;
+    return `<div class="row">
+      <span class="row-ico" style="color:${g.cor}">${ICON.comida}</span>
+      <div class="row-main">
+        <div class="row-title">${esc(g.nome)}</div>
+        <div class="row-sub">${g.media} g/dia · referência ${ref}${g.total ? ` · total ${fmt(g.total)} g` : ''}</div>
+      </div>
+      <div class="row-end"><span class="badge ${e.classe}">${e.nome}</span></div>
+    </div>`;
+  }).join('');
+
+  const corpo = el(`
+    <div>
+      <div class="stats">
+        <div class="stat"><b>${r.diasCom}</b><span>dias com refeições</span></div>
+        <div class="stat"><b>${r.cobertura}%</b><span>alimentos classificados</span></div>
+        <div class="stat"><b>${r.alertas.length}</b><span>alertas</span></div>
+      </div>
+      ${r.suficiente ? '' : `<div class="note mt12"><b>Ainda não há dados suficientes</b><br>
+        <span class="muted">Registe refeições em pelo menos 3 dias e classifique os alimentos pelo grupo alimentar para uma análise fiável.</span></div>`}
+      <div class="section-title mt20">Grupos alimentares</div>
+      <div class="list">${linhas}</div>
+      <p class="hint mt16">A média é calculada sobre os dias com refeições registadas. Refeições só com texto
+        ou calorias manuais não entram na análise. Referências genéricas para adultos; não substituem
+        aconselhamento nutricional.</p>
+    </div>`);
+
+  const { fechar } = sheet({
+    titulo: 'Resumo alimentar', sub: 'Últimos 7 dias',
+    corpo,
+    acoes: `<button class="btn btn-ghost" data-fechar>Fechar</button>`,
+  });
 
   return fechar;
 }

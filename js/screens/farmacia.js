@@ -13,7 +13,8 @@ import { esc, fmt, dataLonga, ICON, on, haptic, toast, sheet, el } from '../util
 import { anel, barrasHorizontais, chartRelacao } from '../charts.js';
 import { cabecalho, segmentados, vazio } from './parts.js';
 import { sheetAgua, sheetTomas, sheetRefeicao, sheetItemFarmacia } from './acoes.js';
-import { sheetRefeicaoDetalhe } from './comida.js';
+import { sheetRefeicaoDetalhe, sheetResumoAlimentar, sheetPrato } from './comida.js';
+import { analisarAlimentacao } from '../nutricao.js';
 import { route, go, refresh } from '../nav.js';
 
 const SUBS = [
@@ -251,6 +252,25 @@ async function seccaoComida() {
   for (const r of rs) if (r.calorias) vals[r.data] = (vals[r.data] || 0) + r.calorias;
   _memoria = Object.assign(_memoria || {}, { refeicoes: rs, kcal: { chaves, vals } });
 
+  const resumo = await analisarAlimentacao(7);
+  const alertasHTML = resumo.alertas.slice(0, 5).map(g =>
+    `<span class="badge ${g.estado === 'acima' ? 'red' : 'amber'}">${esc(g.nome)} ${g.estado === 'acima' ? 'acima' : 'abaixo'}</span>`).join('');
+  const resumoHTML = `
+    <div class="card card-tight mt12">
+      <div class="split">
+        <div>
+          <div class="metric-label">Resumo alimentar · 7 dias</div>
+          <div class="metric-foot">${resumo.diasCom} dia(s) com refeições · ${resumo.cobertura}% classificado</div>
+        </div>
+        <button class="btn btn-sm" data-acao="resumo-alimentar">Ver</button>
+      </div>
+      ${resumo.suficiente
+        ? (alertasHTML
+          ? `<div class="chips mt8">${alertasHTML}</div>`
+          : `<p class="hint" style="margin:8px 0 0">Sem alertas nos grupos acompanhados.</p>`)
+        : `<p class="hint" style="margin:8px 0 0">Registe pelo menos 3 dias e classifique os alimentos para uma análise fiável.</p>`}
+    </div>`;
+
   const lista = deHoje.length ? deHoje.map(r => `
     <div class="row tap" data-refeicao="${esc(r.id)}" role="button" tabindex="0">
       <span class="row-ico" style="background:rgba(251,191,36,.14);color:var(--amber)">${ICON.comida}</span>
@@ -277,6 +297,11 @@ async function seccaoComida() {
     <div class="btn-row mt12">
       <button class="btn btn-primary btn-block" data-acao="refeicao">${ICON.mais} Registar refeição</button>
     </div>
+    <div class="btn-row mt8">
+      <button class="btn btn-sm btn-ghost btn-block" data-acao="novo-prato">${ICON.comida} Criar prato reutilizável</button>
+    </div>
+
+    ${resumoHTML}
 
     <div class="section">
       <div class="section-title">Hoje · ${esc(dataLonga(hoje))}</div>
@@ -286,8 +311,8 @@ async function seccaoComida() {
     <div class="section">
       <div class="section-title">Calorias por dia · 30 dias</div>
       <div class="card"><div class="chart" data-chart="kcal"></div></div>
-      <p class="hint mt12">A contagem é opcional e manual. A estrutura de dados já prevê uma API de
-        reconhecimento de alimentos por fotografia.</p>
+      <p class="hint mt12">Podes pesquisar alimentos por nome ou código de barras. O resumo semanal compara
+        os grupos alimentares com referências genéricas para adultos.</p>
     </div>`;
 }
 
@@ -313,6 +338,8 @@ const ACCOES = {
   tomas: () => sheetTomas(HOJE()),
   agua: () => sheetAgua(HOJE()),
   refeicao: () => sheetRefeicao(),
+  'novo-prato': () => sheetPrato({ aoGuardar: () => refresh() }),
+  'resumo-alimentar': () => sheetResumoAlimentar(),
   'novo-item': () => sheetItemFarmacia(null),
 };
 

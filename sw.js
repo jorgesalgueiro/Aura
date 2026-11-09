@@ -10,7 +10,7 @@
    Os dados de saúde vivem em IndexedDB e não passam nunca por aqui.
    ========================================================================== */
 
-const VERSAO = 'aura-v20';
+const VERSAO = 'aura-v21';
 const CACHE_SHELL = `${VERSAO}-shell`;
 const CACHE_DADOS = `${VERSAO}-dados`;
 
@@ -36,6 +36,7 @@ const SHELL = [
   'js/health-import.js',
   'js/alimentos.js',
   'js/alimentos-comuns.js',
+  'js/nutricao.js',
   'js/scanner.js',
   'js/vendor/quagga.min.js',
   'js/intervals.js',

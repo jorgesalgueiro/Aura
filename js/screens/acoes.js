@@ -419,7 +419,7 @@ export function cardCriseAtiva(crise, { aoTerminar } = {}) {
   return node;
 }
 
-/* ----------------------------------------------------------- digestivo -- */
+/* ---------------------------------------------------------- intestinal -- */
 
 export async function sheetDigestivo(data = diaKey()) {
   const corpo = el(`
@@ -489,7 +489,7 @@ export async function sheetDigestivo(data = diaKey()) {
   });
 
   const { fechar } = sheet({
-    titulo: 'Registo digestivo', sub: data === diaKey() ? 'Hoje' : data, corpo,
+    titulo: 'Registo intestinal', sub: data === diaKey() ? 'Hoje' : data, corpo,
     acoes: `<button class="btn btn-ghost" data-fechar>Cancelar</button>
             <button class="btn btn-primary" data-gravar>Gravar registo</button>`,
   });
@@ -508,7 +508,7 @@ export async function sheetDigestivo(data = diaKey()) {
         : null,
     });
     haptic([8, 30, 8]);
-    toast('Registo digestivo guardado');
+    toast('Registo intestinal guardado');
     fechar(); refresh();
   };
 }

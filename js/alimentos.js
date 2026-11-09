@@ -13,6 +13,7 @@
 
 import { get, put, all, del, uid } from './store.js';
 import { ALIMENTOS_COMUNS } from './alimentos-comuns.js';
+import { grupoPorNome, grupoDeComum, rotuloGrupo, GRUPOS_ALIMENTARES } from './nutricao.js';
 
 const API = 'https://world.openfoodfacts.org';
 const CAMPOS = 'code,product_name,product_name_pt,generic_name,brands,quantity,serving_size,serving_quantity,product_quantity,product_quantity_unit,nutriments';
@@ -27,6 +28,8 @@ const num = (v) => {
 export const fonteNome = (fonte) => ({
   off: 'Open Food Facts', comum: 'Tabela local (aprox.)', custom: 'Personalizado',
 }[fonte] || 'Guardado');
+
+export const fonteProduto = (p) => (p && p.prato ? 'Prato' : fonteNome(p && p.fonte));
 
 /** 8–14 dígitos: EAN-8, UPC-A, EAN-13, ITF-14. */
 export function normalizarCodigo(codigo) {
@@ -81,6 +84,7 @@ function produtoDeOFF(p) {
   const unidade = unidadeDe(p);
   const kcal100 = kcal100De(p.nutriments || {}, p, unidade);
   if (kcal100 == null || !Number.isFinite(kcal100) || kcal100 < 0 || kcal100 > 1000) return null;
+  const grupoAnalise = grupoPorNome(nome);
   return {
     codigo: String(p.code || '').trim(),
     nome,
@@ -89,6 +93,8 @@ function produtoDeOFF(p) {
     kcal100: Math.round(kcal100 * 10) / 10,
     dose: doseDe(p),
     fonte: 'off',
+    grupoAnalise,
+    grupoNome: rotuloGrupo(grupoAnalise),
   };
 }
 
@@ -98,6 +104,7 @@ function slug(s) {
 }
 
 function produtoDeComum(a) {
+  const grupoAnalise = grupoDeComum(a.grupo, a.nome);
   return {
     codigo: `comum:${slug(a.nome)}`,
     nome: a.nome,
@@ -107,10 +114,14 @@ function produtoDeComum(a) {
     dose: a.dose || null,
     fonte: 'comum',
     grupo: a.grupo,
+    grupoAnalise,
+    grupoNome: rotuloGrupo(grupoAnalise),
   };
 }
 
 function produtoDeCustom(row) {
+  const grupoAnalise = row.grupoAnalise || grupoPorNome(row.nome);
+  const prato = row.tipo === 'prato';
   return {
     codigo: `custom:${row.id}`,
     nome: row.nome,
@@ -120,6 +131,11 @@ function produtoDeCustom(row) {
     dose: row.dose || null,
     fonte: 'custom',
     id: row.id,
+    grupoAnalise,
+    grupoNome: rotuloGrupo(grupoAnalise),
+    prato,
+    composicao: prato ? (row.itens || []) : null,
+    pesoTotal: prato ? (row.pesoTotal || null) : null,
   };
 }
 
@@ -230,7 +246,7 @@ export async function guardarNaCache(produto) {
 }
 
 /** Cria um alimento com valores exatos (por 100 g/ml). */
-export async function salvarCustom({ nome, marca = '', kcal100, unidade = 'g', dose = null }) {
+export async function salvarCustom({ nome, marca = '', kcal100, unidade = 'g', dose = null, grupoAnalise = null }) {
   const n = limpar(nome);
   if (n.length < 2) throw new Error('Dê um nome ao alimento.');
   const kcal = num(kcal100);
@@ -238,9 +254,42 @@ export async function salvarCustom({ nome, marca = '', kcal100, unidade = 'g', d
   const u = unidade === 'ml' ? 'ml' : 'g';
   const d = dose == null || dose === '' ? null : num(dose);
   if (d != null && (d <= 0 || d > 5000)) throw new Error('A dose habitual deve estar entre 1 e 5000.');
+  const grupo = GRUPOS_ALIMENTARES.some(g => g.id === grupoAnalise) ? grupoAnalise : grupoPorNome(n);
   const row = {
     id: uid(), nome: n, marca: limpar(marca), kcal100: Math.round(kcal * 10) / 10,
-    unidade: u, dose: d, criado: new Date().toISOString(),
+    unidade: u, dose: d, grupoAnalise: grupo, criado: new Date().toISOString(),
+  };
+  await put('alimentoCustom', row);
+  return produtoDeCustom(row);
+}
+
+/**
+ * Cria um prato composto. O peso total é a soma das quantidades (1 ml ≈ 1 g)
+ * e as calorias por 100 g resultam da soma dos ingredientes.
+ */
+export async function salvarPrato({ nome, itens = [], dose = null }) {
+  const n = limpar(nome);
+  if (n.length < 2) throw new Error('Dê um nome ao prato.');
+  const lista = (itens || []).filter(i => Number(i.quantidade) > 0);
+  if (!lista.length) throw new Error('Adicione pelo menos um ingrediente.');
+  const pesoTotal = lista.reduce((a, i) => a + (Number(i.quantidade) || 0), 0);
+  const kcalTotal = lista.reduce((a, i) => a + (Number(i.kcal) || 0), 0);
+  if (pesoTotal <= 0) throw new Error('O peso total do prato tem de ser maior do que zero.');
+  const kcal100 = Math.round((kcalTotal / pesoTotal) * 100 * 10) / 10;
+  const composicao = lista.map(i => ({
+    nome: i.nome,
+    grupoAnalise: i.grupoAnalise || grupoPorNome(i.nome),
+    quantidade: Math.round((Number(i.quantidade) || 0) * 10) / 10,
+    unidade: i.unidade || 'g',
+    kcal: Number(i.kcal) || 0,
+    fracao: Math.round(((Number(i.quantidade) || 0) / pesoTotal) * 10000) / 10000,
+  }));
+  const d = dose == null || dose === '' ? null : num(dose);
+  if (d != null && (d <= 0 || d > 5000)) throw new Error('A dose habitual deve estar entre 1 e 5000.');
+  const row = {
+    id: uid(), nome: n, marca: '', unidade: 'g', kcal100, dose: d,
+    tipo: 'prato', itens: composicao, pesoTotal: Math.round(pesoTotal * 10) / 10,
+    criado: new Date().toISOString(),
   };
   await put('alimentoCustom', row);
   return produtoDeCustom(row);
@@ -258,11 +307,14 @@ export function kcalDe(produto, quantidade) {
 }
 
 /** Item pronto a guardar dentro de uma refeição. */
-export function itemDe(produto, quantidade) {
+export function itemDe(produto, quantidade, grupoAnalise = null) {
   const q = num(quantidade);
   const kcal = kcalDe(produto, q);
   if (kcal == null) throw new Error('Indique uma quantidade entre 1 e 5000 g/ml.');
-  return {
+  const grupo = GRUPOS_ALIMENTARES.some(g => g.id === grupoAnalise)
+    ? grupoAnalise
+    : (produto.grupoAnalise || grupoPorNome(produto.nome));
+  const item = {
     codigo: produto.codigo || '',
     nome: produto.nome,
     marca: produto.marca || '',
@@ -271,5 +323,17 @@ export function itemDe(produto, quantidade) {
     kcal100: produto.kcal100,
     kcal,
     fonte: produto.fonte || 'off',
+    grupoAnalise: grupo,
+    grupoNome: rotuloGrupo(grupo),
   };
+  if (produto.prato && Array.isArray(produto.composicao) && produto.composicao.length) {
+    item.prato = true;
+    item.composicao = produto.composicao;
+    item.pesoTotal = produto.pesoTotal ||
+      produto.composicao.reduce((a, x) => a + (Number(x.quantidade) || 0), 0);
+    // a análise usa os ingredientes, não o grupo do prato
+    item.grupoAnalise = 'outros';
+    item.grupoNome = 'Prato';
+  }
+  return item;
 }

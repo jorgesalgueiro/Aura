@@ -3,7 +3,7 @@
 Um diário de saúde para quem tem enxaquecas — e para perceber se o tempo tem alguma coisa a
 ver com isso.
 
-Registas o que te apetece registar (dor, medicação, água, digestivo, comida, energia), a app
+Registas o que te apetece registar (dor, medicação, água, registo intestinal, comida, energia), a app
 guarda tudo no telemóvel e cruza com a **pressão atmosférica real** da tua localidade. No fim,
 mostra gráficos e um PDF para levares à consulta.
 
@@ -125,7 +125,7 @@ A app tem quatro abas, sempre no fundo do ecrã:
 | Aba | Para quê |
 |---|---|
 | **Dashboard** | o resumo de hoje e os registos de um toque |
-| **Sintomas** | o diário, as crises, o digestivo e o estado geral |
+| **Sintomas** | o diário, as crises, o registo intestinal e o estado geral |
 | **Farmácia** | medicação, água e alimentação |
 | **Relatórios** | correlações com o tempo e PDF para o médico |
 
@@ -146,7 +146,7 @@ para forçar uma atualização. A roda à direita abre as Definições.
 | **Água** | abre o contador e soma copos |
 | **Medicação** | marca tomas de hoje com um toque |
 | **Iniciar crise** | abre a folha da crise (o cronómetro começa ao gravar) |
-| **Registo digestivo** | escala de Bristol + hemorroidas |
+| **Registo intestinal** | escala de Bristol + hemorroidas |
 | **Refeição** | alimentos, código de barras, calorias e fotografia |
 | **Energia e stress** | leva-te aos dois deslizadores do dia |
 
@@ -182,7 +182,7 @@ do Garmin. No iPhone isto substitui o "pull to refresh" que as apps nativas têm
 
 ### Sintomas
 
-Quatro separadores: **Diário**, **Enxaquecas**, **Digestivo** e **Estado**.
+Quatro separadores: **Diário**, **Enxaquecas**, **Intestinal** e **Estado**.
 
 Os três primeiros têm um seletor com os últimos 8 dias. **Hoje** é o primeiro; os outros
 mostram a data. O dia escolhido aplica-se aos registos que fizeres a partir dali — útil para
@@ -198,7 +198,7 @@ preencher ontem à noite no dia seguinte.
 * **Linha do tempo** — crises, tomas, evacuações, afrontamentos e refeições, por ordem da hora,
   com os detalhes de cada um (intensidade, zona, duração, Δ6 h, tipo de Bristol, calorias…).
 * **Notas do dia** — texto livre. Fica guardado quando sais do campo; não há botão de guardar.
-* **Ações** — enxaqueca (só no dia de hoje), registo digestivo, refeição, água, tomar medicação
+* **Ações** — enxaqueca (só no dia de hoje), registo intestinal, refeição, água, tomar medicação
   e estado/stress.
 
 Numa data passada, os registos ficam nessa data. As crises antigas editam-se no separador
@@ -224,7 +224,7 @@ Numa data passada, os registos ficam nessa data. As crises antigas editam-se no 
 * No topo, quatro números dos últimos 30 dias: crises, intensidade média, duração média e
   quantas tiveram medicação SOS.
 
-#### Digestivo
+#### Intestinal
 
 * **Registar evacuação** — escolhe o aspeto na **escala de Bristol (1 a 7)**. Os sete tipos
   aparecem com pictograma, nome e uma etiqueta de grupo (obstipação, normal, solto ou diarreia);
@@ -289,6 +289,17 @@ Três separadores: **Farmácia**, **Hidratação** e **Alimentação**.
   (a câmara usa a traseira do telemóvel; se falhar, há sempre o campo para escrever o código).
 * Escolhe a **quantidade em g/ml ou uma dose**; o total da refeição soma-se automaticamente.
   Podes juntar vários alimentos à mesma refeição e remover os que enganaste.
+* **Pratos reutilizáveis** — cria um prato com vários ingredientes (ex.: papa de aveia com maçã e
+  gengibre), define a dose habitual e guarda. Ao usá-lo, basta indicar o peso da porção; as
+  calorias são calculadas a partir das calorias por 100 g do prato.
+* **Grupo alimentar** — cada alimento tem um grupo (hortícolas, fruta, cereais, proteínas,
+  laticínios, gorduras ou doces/processados), que podes corrigir na folha da quantidade. Os pratos
+  são analisados pelas proporções dos ingredientes.
+* **Resumo alimentar semanal** — no separador **Alimentação**, compara a média diária dos últimos
+  7 dias com referências genéricas para adultos e mostra faltas ou excessos por grupo. O aviso
+  aparece no máximo uma vez por semana e só quando há pelo menos 3 dias com refeições e 50% dos
+  alimentos classificados. A média é feita sobre os dias com registos; refeições só com texto ou
+  calorias manuais não entram nesta análise.
 * **Alimentos personalizados** — cria os teus (por 100 g ou 100 ml) para receitas caseiras ou
   produtos sem código. Ficam só no dispositivo.
 * **Offline** — os produtos já consultados ficam em cache; a pesquisa também mostra uma pequena
@@ -299,6 +310,8 @@ Três separadores: **Farmácia**, **Hidratação** e **Alimentação**.
 * A pesquisa e o código de barras são enviados ao **Open Food Facts** (base aberta e gratuita);
   não é enviado nenhum dado pessoal. Os valores da base são colaborativos — confirma o rótulo e
   corrige a quantidade ou usa as calorias manuais quando for preciso.
+* O resumo semanal usa **referências genéricas**, não um plano alimentar individual; não substitui
+  aconselhamento nutricional.
 * A câmara precisa de **HTTPS** (o site publicado já tem) e de autorização do browser. No iPhone,
   a autorização pode ser pedida outra vez depois de fechar a app.
 
@@ -337,7 +350,7 @@ A app não inventa dados — mas também não tem poderes mágicos. Isto é o qu
 | Dado | De onde vem |
 |---|---|
 | Pressão, temperatura, humidade | **Open-Meteo**, com as coordenadas das Definições |
-| Crises, água, digestivo, comida, notas, energia, stress | **escritos por ti** |
+| Crises, água, registo intestinal, comida, notas, energia, stress | **escritos por ti** |
 | Sono, peso, passos, HRV, calorias ativas | **importados** do Apple Saúde / Garmin, ou **automáticos** pelo Garmin |
 
 ### O clima
@@ -464,7 +477,7 @@ aparelhos ou para inspeção; para guardar, usa a cópia encriptada.
   definições. A chave da API do Garmin **não** vai no ficheiro.
 * **Restaurar** substitui o que está no aparelho pelo conteúdo da cópia (não faz fusão); a chave
   do Garmin que já tenhas ligada mantém-se. Usa quando mudas de telefone ou reinstalas o sistema.
-* **Apagar registos** limpa o diário, crises, digestivo, tomas e refeições. **Mantém a base de
+* **Apagar registos** limpa o diário, crises, registo intestinal, tomas e refeições. **Mantém a base de
   medicação e as definições** — não tens de voltar a criar a lista de comprimidos.
 
 Três coisas que apanham muita gente:
