@@ -10,7 +10,7 @@
    Os dados de saúde vivem em IndexedDB e não passam nunca por aqui.
    ========================================================================== */
 
-const VERSAO = 'aura-v17';
+const VERSAO = 'aura-v18';
 const CACHE_SHELL = `${VERSAO}-shell`;
 const CACHE_DADOS = `${VERSAO}-dados`;
 
@@ -34,11 +34,16 @@ const SHELL = [
   'js/charts.js',
   'js/seed.js',
   'js/health-import.js',
+  'js/alimentos.js',
+  'js/alimentos-comuns.js',
+  'js/scanner.js',
+  'js/vendor/quagga.min.js',
   'js/intervals.js',
   'js/instalar.js',
   'js/cofre.js',
   'js/screens/parts.js',
   'js/screens/acoes.js',
+  'js/screens/comida.js',
   'js/screens/dashboard.js',
   'js/screens/sintomas.js',
   'js/screens/farmacia.js',
@@ -101,6 +106,8 @@ self.addEventListener('fetch', (ev) => {
     ev.respondWith((async () => {
       try {
         const res = await fetch(req);
+        // um 5xx de um proxy/rede não é a app: usa a cópia em cache
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         guardar(CACHE_SHELL, 'index.html', res.clone());
         return res;
       } catch {

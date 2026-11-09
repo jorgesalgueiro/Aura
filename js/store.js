@@ -5,7 +5,7 @@
    ========================================================================== */
 
 const DB_NAME = 'aura-health-journal';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 /** @type {IDBDatabase|null} */
 let _db = null;
@@ -18,6 +18,8 @@ const STORES = {
   itemMedicacao:   { key: 'id',     indexes: [] },
   tomaMedicacao:   { key: 'id',     indexes: ['data', 'itemId'] },
   refeicao:        { key: 'id',     indexes: ['data'] },
+  alimentoCache:   { key: 'codigo', indexes: [] },
+  alimentoCustom:  { key: 'id',     indexes: [] },
   pressaoCache:    { key: 'chave',  indexes: [] },
   meta:            { key: 'k',      indexes: [] },
 };
@@ -352,16 +354,28 @@ export async function tomasDoDia(data = dayKey()) {
 
 /* ----------------------------------------------------------- Refeicao -- */
 
-export async function adicionarRefeicao({ texto, calorias = null, fotos = [], quando = new Date() }) {
+export async function adicionarRefeicao({ texto, calorias = null, fotos = [], itens = [], quando = new Date() }) {
+  const lista = Array.isArray(itens) ? itens : [];
+  // com alimentos estruturados, o total é sempre a soma deles
+  const total = lista.length
+    ? Math.round(lista.reduce((a, i) => a + (Number(i.kcal) || 0), 0))
+    : (calorias != null ? Math.round(Number(calorias)) : null);
   const r = {
     id: uid(),
     quando: isoOf(quando),
     data: dayKey(quando),
     hora: hhmm(quando),
-    texto, calorias, fotos,
+    texto: texto || lista.map(i => i.nome).filter(Boolean).join(', '),
+    calorias: total,
+    fotos,
+    itens: lista,
   };
   await put('refeicao', r);
   return r;
+}
+
+export async function apagarRefeicao(id) {
+  await del('refeicao', id);
 }
 
 export async function refeicoes(doUltimosDias = 90) {
@@ -375,6 +389,8 @@ export async function refeicoes(doUltimosDias = 90) {
 export async function exportarTudo() {
   const out = { app: 'Aura Health Journal', versao: DB_VERSION, exportadoEm: isoOf(), dados: {} };
   for (const name of Object.keys(STORES)) {
+    // a cache de produtos é descartável e pode ser grande: não vai na cópia
+    if (name === 'alimentoCache') continue;
     const rows = await all(name);
     // a chave da API do Intervals.icu é uma credencial: não sai no ficheiro
     out.dados[name] = name === 'meta' ? rows.filter(r => r.k !== 'intervals') : rows;

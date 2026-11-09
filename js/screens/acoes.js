@@ -4,7 +4,7 @@
 
 import {
   getDia, patchDia, diaKey, hhmm, uid, iniciarCrise, terminarCrise, updateCrise, criseAtiva,
-  farmacia, salvarItem, toggleToma, tomasDoDia, adicionarFezes, adicionarRefeicao, adicionarAfrontamento,
+  farmacia, salvarItem, toggleToma, tomasDoDia, adicionarFezes, adicionarAfrontamento,
   ZONAS_CABECA, GATILHOS, BRISTOL, settings,
 } from '../store.js';
 import { el, esc, sheet, toast, haptic, ICON, bristolSVG, headMapSVG, on, fmt, dataLonga } from '../utils.js';
@@ -575,56 +575,9 @@ export async function sheetAfrontamento(data = diaKey()) {
 
 /* ---------------------------------------------------------- refeições --- */
 
-export async function sheetRefeicao({ data = diaKey() } = {}) {
-  const fotos = [];
-  const corpo = el(`
-    <div>
-      <label class="fld"><span>O que comeu / bebeu</span>
-        <textarea data-txt placeholder="Pequeno-almoço: café com leite, torrada com manteiga…"></textarea></label>
-      <div class="grid2">
-        <label class="fld"><span>Calorias (opcional)</span>
-          <input type="number" min="0" step="10" data-kcal placeholder="Ex.: 420"></label>
-        <label class="fld"><span>Hora</span>
-          <input type="time" data-hora value="${hhmm(new Date())}"></label>
-      </div>
-      <div class="section-title">Fotografias</div>
-      <input type="file" accept="image/*" capture="environment" multiple data-foto style="display:none">
-      <button class="btn btn-ghost btn-block" data-addfoto>${ICON.comida} Adicionar foto</button>
-      <div class="grid3 mt12" data-galeria></div>
-      <p class="hint mt12">Estruturado para integração futura com uma API de contagem automática de calorias.</p>
-    </div>`);
-
-  const { fechar } = sheet({
-    titulo: 'Alimentação',
-    sub: data === diaKey() ? 'Registo simplificado' : dataLonga(data),
-    corpo,
-    acoes: `<button class="btn btn-ghost" data-fechar>Cancelar</button><button class="btn btn-primary" data-gravar>Guardar</button>`,
-  });
-
-  const input = corpo.querySelector('[data-foto]');
-  corpo.querySelector('[data-addfoto]').onclick = () => input.click();
-  input.onchange = () => {
-    [...input.files].slice(0, 3).forEach(f => {
-      const rd = new FileReader();
-      rd.onload = () => {
-        fotos.push(rd.result);
-        corpo.querySelector('[data-galeria]').insertAdjacentHTML('beforeend',
-          `<img src="${rd.result}" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;border:1px solid var(--stroke)">`);
-      };
-      rd.readAsDataURL(f);
-    });
-  };
-
-  corpo.closest('.sheet').querySelector('[data-gravar]').onclick = async () => {
-    const texto = corpo.querySelector('[data-txt]').value.trim();
-    if (!texto && !fotos.length) { toast('Escreva o que comeu', 'err'); return; }
-    const quando = new Date(`${data}T00:00`);
-    const [h, m] = corpo.querySelector('[data-hora]').value.split(':').map(Number);
-    if (!Number.isNaN(h)) quando.setHours(h, m || 0, 0, 0);
-    await adicionarRefeicao({ texto, calorias: +corpo.querySelector('[data-kcal]').value || null, fotos, quando });
-    toast('Refeição registada'); fechar(); refresh();
-  };
-}
+/* A folha de refeição vive em comida.js (pesquisa, código de barras e
+   calorias por alimento). Mantém-se o re-export para os ecrãs que já a usam. */
+export { sheetRefeicao } from './comida.js';
 
 /* ------------------------------------------------- item da farmácia ----- */
 

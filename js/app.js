@@ -460,6 +460,11 @@ async function arrancar() {
   // Garmin em segundo plano: o módulo já limita a uma tentativa a cada 20 min
   sincronizar({ dias: 7 }).then((r) => { if (r && r.dias) refresh(); }).catch(() => {});
 
+  // leitor de códigos pré-carregado: no iOS a câmara tem de abrir no gesto
+  const prepararLeitor = () => import('./scanner.js').then(m => m.prepararScanner()).catch(() => {});
+  if ('requestIdleCallback' in window) requestIdleCallback(prepararLeitor, { timeout: 5000 });
+  else setTimeout(prepararLeitor, 3000);
+
   // clima em segundo plano: atualiza ao voltar para a app e a cada 10 min
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {

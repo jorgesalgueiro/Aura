@@ -5,7 +5,8 @@ O manual para quem usa a app está no [README](../README.md).
 
 ## Correr localmente
 
-Sem compilação, sem dependências, sem CDN — são ES modules servidos como estão:
+Sem compilação e sem CDN — são ES modules servidos como estão. A única biblioteca externa é o
+**Quagga2** (MIT), incluído localmente em `js/vendor/quagga.min.js` para ler códigos de barras.
 
 ```bash
 node tools/serve.mjs                  # → http://127.0.0.1:4173/
@@ -25,8 +26,8 @@ node tools/empacotar.mjs
 | Saída | Para quê |
 |---|---|
 | `dist/site/` | pasta pronta a publicar |
-| `dist/aura-v17.zip` | arrastar para um hosting estático |
-| `dist/aura-v17.tar.gz` | copiar para um servidor / imagem Docker |
+| `dist/aura-v18.zip` | arrastar para um hosting estático |
+| `dist/aura-v18.tar.gz` | copiar para um servidor / imagem Docker |
 | `dist/BUILD.json` | versão + hash do conteúdo (para comparar builds) |
 
 O script confirma primeiro que todos os ficheiros listados no `SHELL` do service worker
@@ -34,7 +35,7 @@ existem — um deploy com um ficheiro em falta falha aqui, não no telefone. No 
 build com o `dist/BUILD.json` anterior e avisa se os ficheiros mudaram sem o `VERSAO` subir:
 
 ```
-⚠  Os ficheiros mudaram mas o VERSAO continua aura-v17.
+⚠  Os ficheiros mudaram mas o VERSAO continua aura-v18.
    Quem já tem a app instalada não recebe esta alteração — avance o VERSAO em sw.js.
 ```
 
@@ -81,11 +82,15 @@ js/weather.js         Open-Meteo: série de pressão, cache, risco, geocodifica�
 js/clima.js           estado do clima partilhado pelos ecrãs
 js/charts.js          SVG desenhados à mão: linhas, barras, dispersão, bandas
 js/health-import.js   export.xml do Saúde + CSV do Garmin, com pré-visualização
+js/alimentos.js       Open Food Facts, cache de produtos e alimentos personalizados
+js/alimentos-comuns.js tabela local de alimentos comuns (pesquisa offline)
+js/scanner.js         leitura de códigos de barras com a câmara (Quagga2)
+js/vendor/quagga.min.js  Quagga2 1.8.4 (MIT), leitor EAN/UPC local
 js/intervals.js       Garmin automático: API do Intervals.icu e regras de fusão
 js/instalar.js        instalação no ecrã principal (Safari/iOS e Chrome/Android)
 js/cofre.js           cópia encriptada .aura (PBKDF2 + AES-GCM) e lembrete de cópia
 js/seed.js            dados de exemplo determinísticos (45 dias)
-js/screens/           dashboard, sintomas, farmacia, relatórios, folhas de ação
+js/screens/           dashboard, sintomas, farmacia, relatórios, comida e folhas de ação
 tools/serve.mjs       servidor estático para desenvolvimento
 tools/empacotar.mjs   gera dist/site + .zip + .tar.gz (sem dependências)
 tools/check-imports.mjs   verifica se todas as importações resolvem
@@ -100,20 +105,25 @@ Dockerfile            imagem nginx (docker compose up -d --build)
 
 Esquema espelho 1:1 do SwiftData do plano: `RegistoDiario` (chave = data, com hidratação,
 estado, notas e `afrontamentos`), `RegistoEnxaqueca`, `RegistoFezes`, `ItemMedicacao`, mais
-`TomaMedicacao`, `Refeicao`, `PressaoCache` e `Meta`.
+`TomaMedicacao`, `Refeicao` (com `itens` de alimentos e total em `calorias`), `AlimentoCache`
+(produtos do Open Food Facts já consultados), `AlimentoCustom` (alimentos criados pelo
+utilizador), `PressaoCache` e `Meta`.
 
 Tudo vive em **IndexedDB**, na origem (esquema + domínio + porta) onde a app corre. Não há
 servidor, conta, analítica nem sincronização entre dispositivos. Os únicos pedidos de rede são
-ao **Open-Meteo**, com as coordenadas escolhidas em Definições, e — só com o Garmin ligado —
-ao **Intervals.icu**.
+ao **Open-Meteo**, com as coordenadas escolhidas em Definições, ao **Open Food Facts** quando se
+procura um alimento ou se lê um código (sem dados pessoais), e — só com o Garmin ligado — ao
+**Intervals.icu**.
 
-`exportarTudo()` inclui todas as lojas, exceto a linha `meta/intervals` (a chave da API). O
-`importarTudo()` usado pelo "Restaurar cópia" limpa as lojas e escreve o conteúdo do ficheiro:
-uma restauração substitui os dados atuais, não faz fusão. A chave do Intervals.icu existente no
-aparelho é lida antes da limpeza e reposta no fim, para restaurar uma cópia não desligar o Garmin.
+`exportarTudo()` inclui todas as lojas, exceto a linha `meta/intervals` (a chave da API) e a
+`alimentoCache` (cache descartável). Os alimentos personalizados entram, porque são dados do
+utilizador. O `importarTudo()` usado pelo "Restaurar cópia" limpa as lojas e escreve o conteúdo
+do ficheiro: uma restauração substitui os dados atuais, não faz fusão. A chave do Intervals.icu
+existente no aparelho é lida antes da limpeza e reposta no fim, para restaurar uma cópia não
+desligar o Garmin.
 
 `limparDadosPessoais()` apaga registos diários, crises, fezes, tomas e refeições; mantém a base
-de medicação, as definições e a cache de clima.
+de medicação, os alimentos personalizados, as definições e a cache de clima.
 
 ### Cópia encriptada (`.aura`)
 
@@ -158,6 +168,20 @@ Cada campo do dia guarda a sua origem (`healthkit`, `garmin`, `manual`, `open-me
 * **Sono** — é sempre atribuído ao dia em que a pessoa acordou.
 * **Limite** — datas fora dos últimos 400 dias são ignoradas na importação.
 
+## Câmara, códigos de barras e Open Food Facts
+
+* `js/scanner.js` carrega `js/vendor/quagga.min.js` (Quagga2 1.8.4, MIT) só quando é preciso.
+  O ficheiro está no `SHELL` e fica em cache para funcionar offline.
+* `getUserMedia` só existe em **HTTPS** ou localhost. No iPhone, a autorização da câmara pode
+  voltar a ser pedida depois de fechar a PWA; se a câmara falhar, o campo para escrever os
+  8–14 dígitos do código está sempre disponível.
+* `js/alimentos.js` usa a API v2 do Open Food Facts (`/api/v2/product/...` e `/api/v2/search`),
+  com timeout de 8 s. Só o texto da pesquisa/código sai do dispositivo; não há dados pessoais.
+* Produtos consultados ficam em `alimentoCache` (não entra nas cópias). Os alimentos
+  personalizados ficam em `alimentoCustom` e entram no JSON exportado.
+* Os valores do Open Food Facts são colaborativos. A UI mostra a fonte, permite corrigir a
+  quantidade e introduzir calorias à mão; a tabela local (`alimentos-comuns.js`) é aproximada.
+
 ## Service worker e versões
 
 O service worker serve o shell **cache-first**: um ficheiro acabado de editar pode ser servido
@@ -171,7 +195,7 @@ for (const c of await caches.keys()) await caches.delete(c);
 location.reload();
 ```
 
-Ao mexer em qualquer ficheiro do `SHELL` de `sw.js`, avança `VERSAO` (`aura-v17` agora) para
+Ao mexer em qualquer ficheiro do `SHELL` de `sw.js`, avança `VERSAO` (`aura-v18` agora) para
 que as instalações existentes revalidem de uma vez. A app mostra "Nova versão disponível — a
 atualizar…" e recarrega sozinha quando o novo worker ativa.
 

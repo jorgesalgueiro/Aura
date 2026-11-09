@@ -69,6 +69,7 @@ export async function render() {
   const tomas = await tomasDoDia(hoje);
   const crises7 = (await crises(7)).filter(c => c.dataFim);
   const refeicoesHoje = (await refeicoes(1)).filter(r => r.data === hoje);
+  const kcalHoje = refeicoesHoje.reduce((a, r) => a + (r.calorias || 0), 0);
 
   const esperadas = itens.reduce((a, i) => a + (i.tomarAs?.length || 0), 0);
   // adesão aos horários programados (as tomas SOS ficam de fora do numerador)
@@ -116,7 +117,7 @@ export async function render() {
         ${atalho({ icone: 'pilula', texto: 'Medicação', valor: esperadas ? `${cumpridas}/${esperadas}` : `${tomas.length} tomas`, accao: 'tomas' })}
         ${atalho({ icone: 'raio', texto: 'Iniciar crise', valor: crise ? 'em curso' : 'cronómetro', accao: 'crise', vivo: !!crise })}
         ${atalho({ icone: 'escama', texto: 'Registo digestivo', accao: 'digestivo' })}
-        ${atalho({ icone: 'comida', texto: 'Refeição', valor: refeicoesHoje.length ? `${refeicoesHoje.length} hoje` : '', accao: 'refeicao' })}
+        ${atalho({ icone: 'comida', texto: 'Refeição', valor: kcalHoje ? `${fmt(kcalHoje)} kcal` : refeicoesHoje.length ? `${refeicoesHoje.length} hoje` : '', accao: 'refeicao' })}
         ${atalho({ icone: 'cerebro', texto: 'Energia e stress', valor: dia.energia != null ? `${dia.energia}/10` : '', accao: 'estado' })}
       </div>
     </div>`);

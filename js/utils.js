@@ -100,7 +100,7 @@ document.addEventListener('keydown', teclaNasFolhas);
  * Abre uma folha modal (bottom sheet) e devolve { root, fechar, body }.
  * `corpo` pode ser HTML string ou um elemento.
  */
-export function sheet({ titulo = '', sub = '', corpo = '', acoes = '', larguraCheia = false, aoFechar } = {}) {
+export function sheet({ titulo = '', sub = '', corpo = '', acoes = '', larguraCheia = false, autoFocus = true, aoFechar } = {}) {
   const root = document.getElementById('sheet-root');
   const scrim = el(`
     <div class="scrim" role="dialog" aria-modal="true" aria-label="${esc(titulo || 'Detalhes')}">
@@ -141,7 +141,7 @@ export function sheet({ titulo = '', sub = '', corpo = '', acoes = '', larguraCh
   root.appendChild(scrim);
   folhas.push({ scrim, fechar });
   requestAnimationFrame(() => scrim.classList.add('in'));
-  const first = scrim.querySelector('input, textarea, select, button:not([data-fechar])');
+  const first = autoFocus ? scrim.querySelector('input, textarea, select, button:not([data-fechar])') : null;
   if (first) setTimeout(() => first.focus({ preventScroll: true }), 260);
 
   return { root: scrim, body, fechar };
@@ -168,6 +168,7 @@ export const ICON = {
   tempo:   P('<circle cx="12" cy="12" r="8.4"/><path d="M12 7.5V12l3 1.9"/>'),
   termo:   P('<path d="M14 14.8V5.5a2.5 2.5 0 1 0-5 0v9.3a4.2 4.2 0 1 0 5 0Z"/><path d="M11.5 9.5v6.4"/>'),
   comida:  P('<path d="M6 3v8.5M9 3v8.5M7.5 11.5V21"/><path d="M16.5 3c-1.6 1.2-2.3 3.2-2.3 5.6 0 1.8.8 2.9 2.3 2.9V21"/>'),
+  codigo:  P('<path d="M4 5v14M7 5v14M10.5 5v9M14 5v14M17.5 5v14M20.5 5v9"/>'),
   alerta:  P('<path d="M10.3 3.9 2.6 17.4A2 2 0 0 0 4.3 20.4h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4M12 16.8v.1"/>'),
   cama:    P('<path d="M3 18V7M3 12h13a5 5 0 0 1 5 5v1M3 18h18"/><circle cx="7.5" cy="10" r="1.8"/>'),
   grafico: P('<path d="M4 20V4M4 20h16"/><path d="M7.5 15.5l3.5-4.5 3 2.5 4.5-6.5"/>'),

@@ -12,6 +12,7 @@ import { esc, fmt, dataLonga, ICON, on, haptic, toast, sheet, el } from '../util
 import { anel, barrasHorizontais, chartRelacao } from '../charts.js';
 import { cabecalho, segmentados, vazio } from './parts.js';
 import { sheetAgua, sheetTomas, sheetRefeicao, sheetItemFarmacia } from './acoes.js';
+import { sheetRefeicaoDetalhe } from './comida.js';
 import { route, go, refresh } from '../nav.js';
 
 const SUBS = [
@@ -23,7 +24,7 @@ const TITULOS = { farmacia: 'Farmácia pessoal', agua: 'Hidratação', comida: '
 const SUBTITULOS = {
   farmacia: 'A sua base de dados de medicação. Um toque no horário marca a toma.',
   agua: 'Contador ajustado ao tamanho do seu copo.',
-  comida: 'Refeições por texto e fotografia, preparadas para leitura automática de calorias.',
+  comida: 'Calorias por alimento, código de barras ou fotografia. Tudo somado no dia.',
 };
 
 const HOJE = () => diaKey();
@@ -206,19 +207,20 @@ async function seccaoComida() {
   _memoria = Object.assign(_memoria || {}, { refeicoes: rs, kcal: { chaves, vals } });
 
   const lista = deHoje.length ? deHoje.map(r => `
-    <div class="row">
+    <div class="row tap" data-refeicao="${esc(r.id)}" role="button" tabindex="0">
       <span class="row-ico" style="background:rgba(251,191,36,.14);color:var(--amber)">${ICON.comida}</span>
       <div class="row-main">
         <div class="row-title">${esc(r.texto || 'Refeição com fotografia')}</div>
-        <div class="row-sub">${esc(r.hora)}${r.calorias ? ` · ${fmt(r.calorias)} kcal` : ''}</div>
+        <div class="row-sub">${esc(r.hora)}${r.itens && r.itens.length ? ` · ${r.itens.length} alimento${r.itens.length > 1 ? 's' : ''}` : ''}</div>
         ${r.fotos && r.fotos.length ? `<div class="grid3 mt8" style="max-width:196px">
           ${r.fotos.map((f, i) => `<img src="${f}" alt="Fotografia da refeição de ${esc(r.hora)}"
             data-ampliar="${esc(r.id)}:${i}"
             style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--stroke);cursor:zoom-in">`).join('')}
         </div>` : ''}
       </div>
+      <div class="row-end"><b>${r.calorias != null ? fmt(r.calorias) + ' kcal' : ''}</b></div>
     </div>`).join('')
-    : vazio('Sem refeições hoje', 'Registe em segundos: texto, calorias opcionais e fotografia.');
+    : vazio('Sem refeições hoje', 'Registe por alimento, por texto ou fotografia; as calorias somam-se automaticamente.');
 
   return `
     <div class="stats">
@@ -323,6 +325,16 @@ export async function bind(root) {
     await saveSettings({ incrementoAguaMl: v });
     toast(`Copo: ${fmt(v)} ml`); refresh();
   };
+
+  /* detalhe da refeição (itens, total e apagar) */
+  on(root, 'click', '[data-refeicao]', (e, row) => {
+    if (e.target.closest('[data-ampliar]')) return;
+    const r = (_memoria?.refeicoes || []).find(x => x.id === row.dataset.refeicao);
+    if (r) sheetRefeicaoDetalhe(r);
+  });
+  on(root, 'keydown', '[data-refeicao]', (e, row) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); row.click(); }
+  });
 
   /* fotografia ampliada */
   on(root, 'click', '[data-ampliar]', (e, img) => {

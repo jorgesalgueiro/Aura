@@ -147,7 +147,7 @@ para forçar uma atualização. A roda à direita abre as Definições.
 | **Medicação** | marca tomas de hoje com um toque |
 | **Iniciar crise** | abre a folha da crise (o cronómetro começa ao gravar) |
 | **Registo digestivo** | escala de Bristol + hemorroidas |
-| **Refeição** | texto, calorias e fotografia |
+| **Refeição** | alimentos, código de barras, calorias e fotografia |
 | **Energia e stress** | leva-te aos dois deslizadores do dia |
 
 * **Barómetro atmosférico** — pressão ao nível do mar em hPa, variação das últimas 6 horas e um
@@ -272,11 +272,22 @@ Três separadores: **Farmácia**, **Hidratação** e **Alimentação**.
 
 #### Alimentação
 
-* **Registar refeição** — texto livre, calorias (opcional), hora e até 3 fotografias tiradas na
-  hora. As fotos ficam no próprio aparelho.
-* Lista das refeições de hoje, com miniaturas. Toca numa foto para a ver em grande.
-* **Calorias por dia** nos últimos 30 dias, somando o que tiveres registado.
-* Não há base de dados de alimentos nem contagem automática — o número é o que escreveres.
+* **Registar refeição** — procura o alimento **pelo nome** ou lê/escreve o **código de barras**
+  (a câmara usa a traseira do telemóvel; se falhar, há sempre o campo para escrever o código).
+* Escolhe a **quantidade em g/ml ou uma dose**; o total da refeição soma-se automaticamente.
+  Podes juntar vários alimentos à mesma refeição e remover os que enganaste.
+* **Alimentos personalizados** — cria os teus (por 100 g ou 100 ml) para receitas caseiras ou
+  produtos sem código. Ficam só no dispositivo.
+* **Offline** — os produtos já consultados ficam em cache; a pesquisa também mostra uma pequena
+  tabela local de alimentos comuns. Sem rede, podes sempre escrever as calorias à mão.
+* **Fotografias** — até 3 por refeição, tiradas na hora; ficam no próprio aparelho.
+* Na lista de hoje, toca numa refeição para ver o detalhe dos alimentos, o total e a opção de
+  apagar. **Calorias por dia** nos últimos 30 dias somam todas as refeições.
+* A pesquisa e o código de barras são enviados ao **Open Food Facts** (base aberta e gratuita);
+  não é enviado nenhum dado pessoal. Os valores da base são colaborativos — confirma o rótulo e
+  corrige a quantidade ou usa as calorias manuais quando for preciso.
+* A câmara precisa de **HTTPS** (o site publicado já tem) e de autorização do browser. No iPhone,
+  a autorização pode ser pedida outra vez depois de fechar a app.
 
 ### Relatórios
 
@@ -541,7 +552,10 @@ As alterações de perfil, localidade, água e háptico só ficam guardadas quan
 
 ## Para quem mexe no código
 
-Isto é uma PWA sem build, sem dependências e sem CDN: ES modules servidos tal como estão.
+Isto é uma PWA sem build e sem CDN: ES modules servidos tal como estão. A única biblioteca
+externa é o **Quagga2** (MIT), incluído em `js/vendor/quagga.min.js` para ler códigos de barras;
+não é carregado de um CDN nem precisa de compilação. A licença está em
+`js/vendor/quagga2-LICENSE.txt`.
 
 ```bash
 node tools/serve.mjs          # http://127.0.0.1:4173/
