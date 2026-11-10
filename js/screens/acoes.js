@@ -162,30 +162,87 @@ export async function sheetTomas(data = diaKey()) {
     </div>`;
   };
 
-  const corpo = el(`<div>${itens.map(linha).join('')}
-    <p class="hint">Um toque marca a toma com a hora exata — é esta associação que alimenta o relatório de correlação.</p></div>`);
+  const dica = `<p class="hint">Um toque marca a toma com a hora exata — é esta associação que alimenta o relatório de correlação.</p>`;
+  const listaHTML = () => `${itens.map(linha).join('')}${dica}`;
+  const porId = new Map(itens.map(i => [i.id, i]));
+  let foco = null;
 
-  const { fechar } = sheet({ titulo: 'Tomar medicação', sub: data === diaKey() ? 'Hoje' : data, corpo });
+  const corpo = el(`<div>${listaHTML()}</div>`);
 
-  const redesenhar = async () => {
-    tomas = await tomasDoDia(data);
-    corpo.innerHTML = itens.map(linha).join('');
+  const { fechar } = sheet({
+    titulo: 'Tomar medicação', sub: data === diaKey() ? 'Hoje' : data, corpo,
+    acoes: `<button class="btn btn-ghost" data-fechar>Fechar</button>`,
+  });
+
+  const atualizarTomas = async () => { tomas = await tomasDoDia(data); };
+
+  const renderLista = () => {
+    foco = null;
+    corpo.innerHTML = listaHTML();
+  };
+
+  const renderFoco = () => {
+    if (!foco) { renderLista(); return; }
+    const { item, quando, tomado } = foco;
+    const hora = hhmm(quando);
+    corpo.innerHTML = `
+      <div class="center" style="padding:6px 0 2px">
+        <span class="metric-icon ${tomado ? 'green' : 'amber'}" style="margin:0 auto 10px">${ICON.check}</span>
+        <div class="metric-label">${tomado ? 'Toma registada' : 'Toma removida'}</div>
+        <div style="font-size:21px;font-weight:680;letter-spacing:-.3px;margin-top:4px">${esc(item.nome)}</div>
+        <div class="muted" style="font-size:14px;margin-top:2px">${esc(item.dosagem || 'Sem dosagem indicada')}</div>
+        <div class="note mt16" style="text-align:left">
+          <b>${hora}</b> · ${esc(dataLonga(data))}${item.categoria === 'suplemento' ? ' · suplemento' : ''}
+        </div>
+        <div class="btn-row mt16">
+          <button class="btn btn-sm" data-desfazer>Desfazer</button>
+          <button class="btn btn-sm btn-ghost" data-escolher-outro>Escolher outro</button>
+        </div>
+      </div>`;
   };
 
   on(corpo, 'click', '[data-agora]', async (e, b) => {
-    const r = await toggleToma(b.dataset.agora, new Date());
+    const item = porId.get(b.dataset.agora);
+    if (!item) return;
+    const quando = new Date();
+    const r = await toggleToma(item.id, quando);
+    await atualizarTomas();
+    foco = { item, quando, tomado: r.tomado };
+    renderFoco();
     haptic(r.tomado ? 14 : 5);
-    if (r.tomado) toast(`Registado às ${hhmm(new Date())}`);
-    await redesenhar(); refresh();
+    toast(r.tomado ? `${item.nome}${item.dosagem ? ' ' + item.dosagem : ''} · ${hhmm(quando)}` : `${item.nome}: toma removida`, r.tomado ? 'ok' : 'warn');
+    refresh();
   });
 
   on(corpo, 'click', '[data-slot]', async (e, b) => {
     const [itemId, hora] = b.dataset.slot.split('|');
+    const item = porId.get(itemId);
+    if (!item) return;
     const [h, mi] = hora.split(':').map(Number);
-    const d = new Date(data + 'T00:00'); d.setHours(h, mi, 0, 0);
-    const r = await toggleToma(itemId, d);
+    const quando = new Date(data + 'T00:00'); quando.setHours(h, mi, 0, 0);
+    const r = await toggleToma(itemId, quando);
+    await atualizarTomas();
+    foco = { item, quando, tomado: r.tomado };
+    renderFoco();
     haptic(r.tomado ? 14 : 5);
-    await redesenhar(); refresh();
+    toast(r.tomado ? `${item.nome}${item.dosagem ? ' ' + item.dosagem : ''} · ${hora}` : `${item.nome}: toma removida`, r.tomado ? 'ok' : 'warn');
+    refresh();
+  });
+
+  on(corpo, 'click', '[data-desfazer]', async () => {
+    if (!foco) return;
+    const r = await toggleToma(foco.item.id, foco.quando);
+    await atualizarTomas();
+    foco = { ...foco, tomado: r.tomado };
+    renderFoco();
+    haptic(r.tomado ? 14 : 5);
+    toast(r.tomado ? `${foco.item.nome}: toma reposta` : `${foco.item.nome}: toma removida`, r.tomado ? 'ok' : 'warn');
+    refresh();
+  });
+
+  on(corpo, 'click', '[data-escolher-outro]', async () => {
+    await atualizarTomas();
+    renderLista();
   });
 
   return fechar;

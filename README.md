@@ -260,6 +260,9 @@ Três separadores: **Farmácia**, **Hidratação** e **Alimentação**.
   ficam no topo da farmácia e aparecem **primeiro na lista SOS** ao iniciar uma crise. Cada item
   mostra um botão por horário habitual; tocar marca (ou desmarca) a toma. O botão **+ agora**
   regista com a hora exata, mesmo fora do horário.
+* **Marcar toma** — ao escolher um medicamento na folha, a confirmação mostra apenas o **nome, a
+  dosagem e a hora** desse medicamento, com **Desfazer** e **Escolher outro**. A lista completa
+  só reaparece se tocares em **Escolher outro**.
 * **Novo item** — nome, dosagem, **grupo** (crise/SOS, crónico, vitamina/mineral, ómega 3 ou
   outro), interruptor **Mostrar como SOS na crise** e horários habituais (08:00, 14:00, 21:00 ou
   uma hora à medida).

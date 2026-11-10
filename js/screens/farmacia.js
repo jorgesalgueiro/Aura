@@ -357,9 +357,11 @@ export async function bind(root) {
   /* toma com um toque no horário */
   on(root, 'click', '[data-toma]', async (e, b) => {
     const quando = b.dataset.agora ? new Date() : dataHora(b.dataset.h);
+    const item = (_memoria?.itens || []).find(i => i.id === b.dataset.toma);
+    const etiqueta = item ? `${item.nome}${item.dosagem ? ' ' + item.dosagem : ''}` : 'Toma';
     const r = await toggleToma(b.dataset.toma, quando);
     haptic(r.tomado ? [10, 30, 10] : 5);
-    toast(r.tomado ? `Toma marcada às ${hhmm(quando)}` : 'Toma retirada');
+    toast(r.tomado ? `${etiqueta} · ${hhmm(quando)}` : `${etiqueta}: toma removida`, r.tomado ? 'ok' : 'warn');
     refresh();
   });
 
