@@ -7,10 +7,10 @@
    itens em `itens`, além do total em `calorias` (compatível com relatórios).
    ========================================================================== */
 
-import { diaKey, hhmm, adicionarRefeicao, apagarRefeicao } from '../store.js';
+import { diaKey, hhmm, adicionarRefeicao, apagarRefeicao, refeicoes } from '../store.js';
 import {
   buscarProduto, pesquisarAlimentos, pesquisarLocais, sugestoes, salvarCustom, salvarPrato,
-  listarCustom, apagarCustom, itemDe, kcalDe, guardarNaCache, fonteProduto,
+  listarCustom, apagarCustom, itemDe, kcalDe, guardarNaCache, fonteProduto, recentes,
 } from '../alimentos.js';
 import { GRUPOS_ALIMENTARES, grupoPorNome, analisarAlimentacao, ESTADOS } from '../nutricao.js';
 import { lerCodigo, prepararScanner } from '../scanner.js';
@@ -18,6 +18,23 @@ import { el, esc, sheet, toast, haptic, ICON, fmt, dataLonga, on } from '../util
 import { refresh } from '../nav.js';
 
 const totalDe = (itens) => itens.reduce((a, i) => a + (Number(i.kcal) || 0), 0);
+
+/** Repete a refeição mais recente com a hora atual (sem copiar fotografias). */
+export async function repetirUltimaRefeicao() {
+  const rs = await refeicoes(30).catch(() => []);
+  if (!rs.length) { toast('Ainda não há refeições para repetir', 'warn'); return null; }
+  const r = rs[0];
+  const nova = await adicionarRefeicao({
+    texto: r.texto || '',
+    calorias: r.calorias ?? null,
+    itens: (r.itens || []).map(i => ({ ...i })),
+    quando: new Date(),
+  });
+  haptic([10, 40, 10]);
+  toast(`Repetida: ${r.texto || 'última refeição'}`);
+  refresh();
+  return nova;
+}
 
 /* ----------------------------------------------------------- quantidade -- */
 
@@ -320,6 +337,7 @@ export async function sheetRefeicao({ data = diaKey() } = {}) {
   const itens = [];
   const fotos = [];
   let resultados = [];
+  let recentesLista = [];
   let seqBusca = 0;
 
   const corpo = el(`
@@ -344,6 +362,11 @@ export async function sheetRefeicao({ data = diaKey() } = {}) {
         </div>
         <div data-estado-pesquisa class="hint mt8" hidden></div>
         <div data-resultados class="list mt8"></div>
+      </div>
+
+      <div data-recentes-wrap hidden>
+        <div class="section-title mt20">Repetir rápido</div>
+        <div class="chips" data-recentes></div>
       </div>
 
       <div class="section-title mt20">Nesta refeição</div>
@@ -494,6 +517,14 @@ export async function sheetRefeicao({ data = diaKey() } = {}) {
   // sugestões imediatas (personalizados + alimentos comuns)
   sugestoes().then((s) => { if (seqBusca === 0) { resultados = s; desenharResultados(); } }).catch(() => {});
 
+  recentes().then((rs) => {
+    recentesLista = rs;
+    if (!rs.length) return;
+    corpo.querySelector('[data-recentes-wrap]').hidden = false;
+    corpo.querySelector('[data-recentes]').innerHTML = rs.map((r, i) =>
+      `<button class="chip" data-recente="${i}">${esc(r.nome)} · ${fmt(r.kcal)} kcal</button>`).join('');
+  }).catch(() => {});
+
   corpo.querySelector('[data-procurar]').onclick = procurar;
   busca.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); procurar(); }
@@ -527,6 +558,14 @@ export async function sheetRefeicao({ data = diaKey() } = {}) {
   on(corpo, 'click', '[data-remover-item]', (e, b) => {
     itens.splice(+b.dataset.removerItem, 1);
     desenharItens();
+  });
+  on(corpo, 'click', '[data-recente]', (e, b) => {
+    const it = recentesLista[+b.dataset.recente];
+    if (!it) return;
+    itens.push({ ...it });
+    desenharItens();
+    haptic(8);
+    toast(`${it.nome}: ${fmt(it.kcal)} kcal`);
   });
 
   // fotografias

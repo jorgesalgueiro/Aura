@@ -35,14 +35,15 @@ const normalizar = (s) => String(s || '').normalize('NFD')
 /** Heurística por nome, usada em produtos sem grupo explícito. */
 export function grupoPorNome(nome) {
   const n = normalizar(nome);
-  if (/refrigerante|sumo|cerveja|vinho|energetico|achocolatado|colacao/.test(n)) return 'doces';
-  if (/batata frita|fritas|pizza|hamburguer|bolo|bolacha|biscoito|chocolate|gelado|acucar|mel|croissant|pastel/.test(n)) return 'doces';
-  if (/leite|iogurte|queijo|requeijao|manteiga|nata|kefir/.test(n)) return 'laticinios';
-  if (/ovo|frango|peru|carne|vaca|porco|peixe|salmao|atum|bacalhau|sardinha|tofu|seitan|feijao|grao|lentilha|soja/.test(n)) return 'proteinas';
-  if (/banana|maca|pera|laranja|uva|morango|abacate|kiwi|manga|melao|melancia|pessego|ameixa|figo|ananas|fruta/.test(n)) return 'fruta';
-  if (/tomate|alface|brocolo|cenoura|legume|salada|espinafre|cebola|pepino|abobora|curgete|pimento|couve|nabo|alho|horticola/.test(n)) return 'horticolas';
-  if (/pao|tosta|cereal|aveia|arroz|massa|quinoa|broa|cuscuz|polenta|batata/.test(n)) return 'cereais';
-  if (/azeite|oleo|amendoa|noz|castanha|semente/.test(n)) return 'gorduras';
+  if (/refrigerante|sumo|cerveja|vinho|energetico|achocolatado|colacao|soda|juice|beer|wine|energy drink/.test(n)) return 'doces';
+  if (/peanut butter|manteiga de amendoim/.test(n)) return 'gorduras';
+  if (/batata frita|fritas|pizza|hamburguer|bolo|bolacha|biscoito|chocolate|gelado|acucar|mel|croissant|pastel|fries|fried|burger|cake|cookie|biscuit|ice cream|sugar|honey|pastry|candy|dessert|syrup/.test(n)) return 'doces';
+  if (/leite|iogurte|queijo|requeijao|manteiga|nata|kefir|milk|yogurt|yoghurt|cheese|butter|cream/.test(n)) return 'laticinios';
+  if (/ovo|frango|peru|carne|vaca|porco|peixe|salmao|atum|bacalhau|sardinha|tofu|seitan|feijao|grao|lentilha|soja|egg|chicken|turkey|beef|pork|fish|salmon|tuna|cod|sardine|bean|lentil|soy|shrimp|prawn/.test(n)) return 'proteinas';
+  if (/banana|maca|pera|laranja|uva|morango|abacate|kiwi|manga|melao|melancia|pessego|ameixa|figo|ananas|fruta|apple|pear|orange|grape|strawberr|avocado|mango|melon|watermelon|peach|plum|pineapple|fruit|blueberr|raspberr/.test(n)) return 'fruta';
+  if (/tomate|alface|brocolo|cenoura|legume|salada|espinafre|cebola|pepino|abobora|curgete|pimento|couve|nabo|alho|horticola|tomato|lettuce|broccoli|carrot|vegetable|salad|spinach|onion|cucumber|pumpkin|zucchini|pepper|cabbage|turnip|garlic|mushroom|pea|corn/.test(n)) return 'horticolas';
+  if (/pao|tosta|cereal|aveia|arroz|massa|quinoa|broa|cuscuz|polenta|batata|bread|toast|cereal|oat|oatmeal|rice|pasta|potato|couscous|noodle/.test(n)) return 'cereais';
+  if (/azeite|oleo|amendoa|noz|castanha|semente|olive oil|oil|almond|nut|walnut|chestnut|seed|peanut/.test(n)) return 'gorduras';
   return 'outros';
 }
 

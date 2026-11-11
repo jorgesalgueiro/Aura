@@ -26,8 +26,8 @@ node tools/empacotar.mjs
 | Saída | Para quê |
 |---|---|
 | `dist/site/` | pasta pronta a publicar |
-| `dist/aura-v22.zip` | arrastar para um hosting estático |
-| `dist/aura-v22.tar.gz` | copiar para um servidor / imagem Docker |
+| `dist/aura-v23.zip` | arrastar para um hosting estático |
+| `dist/aura-v23.tar.gz` | copiar para um servidor / imagem Docker |
 | `dist/BUILD.json` | versão + hash do conteúdo (para comparar builds) |
 
 O script confirma primeiro que todos os ficheiros listados no `SHELL` do service worker
@@ -35,7 +35,7 @@ existem — um deploy com um ficheiro em falta falha aqui, não no telefone. No 
 build com o `dist/BUILD.json` anterior e avisa se os ficheiros mudaram sem o `VERSAO` subir:
 
 ```
-⚠  Os ficheiros mudaram mas o VERSAO continua aura-v22.
+⚠  Os ficheiros mudaram mas o VERSAO continua aura-v23.
    Quem já tem a app instalada não recebe esta alteração — avance o VERSAO em sw.js.
 ```
 
@@ -85,6 +85,7 @@ js/health-import.js   export.xml do Saúde + CSV do Garmin, com pré-visualizaç
 js/alimentos.js       Open Food Facts, cache de produtos e alimentos personalizados
 js/alimentos-comuns.js tabela local de alimentos comuns (pesquisa offline)
 js/nutricao.js        grupos alimentares, análise dos últimos 7 dias e aviso semanal
+js/importar-refeicoes.js  diário alimentar CSV (MyFitnessPal/genérico), pré-visualização
 js/scanner.js         leitura de códigos de barras com a câmara (Quagga2)
 js/vendor/quagga.min.js  Quagga2 1.8.4 (MIT), leitor EAN/UPC local
 js/intervals.js       Garmin automático: API do Intervals.icu e regras de fusão
@@ -209,7 +210,7 @@ for (const c of await caches.keys()) await caches.delete(c);
 location.reload();
 ```
 
-Ao mexer em qualquer ficheiro do `SHELL` de `sw.js`, avança `VERSAO` (`aura-v22` agora) para
+Ao mexer em qualquer ficheiro do `SHELL` de `sw.js`, avança `VERSAO` (`aura-v23` agora) para
 que as instalações existentes revalidem de uma vez. A app mostra "Nova versão disponível — a
 atualizar…" e recarrega sozinha quando o novo worker ativa.
 

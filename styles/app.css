@@ -143,7 +143,7 @@ body {
 /* ---------- view ---------- */
 #view {
   flex: 1;
-  padding: 18px var(--sp) calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 30px);
+  padding: 18px var(--sp) calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 96px);
   outline: none;
 }
 #view:focus-visible { outline: none; }
@@ -500,6 +500,21 @@ button.row:hover, .row.hoverable:hover { background: var(--surface-2); }
 .bristol-guide .g-ico svg { width: 44px; height: 28px; }
 .bristol-guide b { font-size: 13px; }
 .bristol-guide p { margin: 3px 0 0; font-size: 12px; color: var(--text-2); line-height: 1.45; }
+
+/* ---------- floating quick add ---------- */
+.fab {
+  position: fixed; z-index: 60; width: 54px; height: 54px; border-radius: 50%;
+  right: max(18px, calc((100vw - 720px) / 2 + 18px));
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
+  display: grid; place-items: center; cursor: pointer; border: 1px solid rgba(255,255,255,.18);
+  background: linear-gradient(135deg, #2dd4bf, #38bdf8); color: #04121a;
+  box-shadow: 0 12px 30px rgba(45,212,191,.35), 0 2px 8px rgba(0,0,0,.35);
+  transition: transform .14s ease, filter .14s ease;
+}
+.fab svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+.fab:hover { filter: brightness(1.08); }
+.fab:active { transform: scale(.93); }
+.fab:focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; }
 
 /* ---------- barcode scanner ---------- */
 .scanner {

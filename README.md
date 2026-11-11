@@ -303,6 +303,15 @@ Três separadores: **Farmácia**, **Hidratação** e **Alimentação**.
   aparece no máximo uma vez por semana e só quando há pelo menos 3 dias com refeições e 50% dos
   alimentos classificados. A média é feita sobre os dias com registos; refeições só com texto ou
   calorias manuais não entram nesta análise.
+* **Repetir rápido** — na folha de refeição aparecem os últimos alimentos usados; um toque
+  adiciona-os outra vez com a quantidade anterior.
+* **Repetir última refeição** — no registo rápido ou em Alimentação, duplica a refeição mais
+  recente com a hora atual (sem copiar fotografias).
+* **Importar MyFitnessPal** — em Alimentação, escolhe o **CSV do diário** exportado pelo
+  MyFitnessPal. A app reconhece colunas como `Date`, `Meal`, `Food` e `Calories`, mostra uma
+  pré-visualização e importa as refeições. O MyFitnessPal **não tem API pública**; é preciso
+  exportar o ficheiro (Premium ou pedido de dados) e não serve um PDF. As quantidades podem ser
+  porções, não gramas — as calorias totais ficam certas, mas a análise por grupos é aproximada.
 * **Alimentos personalizados** — cria os teus (por 100 g ou 100 ml) para receitas caseiras ou
   produtos sem código. Ficam só no dispositivo.
 * **Offline** — os produtos já consultados ficam em cache; a pesquisa também mostra uma pequena
@@ -571,7 +580,9 @@ As alterações de perfil, localidade, água e háptico só ficam guardadas quan
 
 ## Atalhos
 
-* **Teclado**: `1`–`4` mudam de aba no computador.
+* **Botão +** flutuante: registo rápido em qualquer ecrã (água, medicação, crise, intestinal,
+  refeição, peso ou repetir a última refeição).
+* **Teclado**: `1`–`4` mudam de aba e `Q` abre o registo rápido no computador.
 * **Android**: prime e mantém o ícone para **Iniciar crise**, **Beber água** e **Relatórios**.
 * **Pull-to-refresh**: puxa o ecrã para baixo para atualizar clima e Garmin.
 * **Pastilha do topo**: toca para forçar uma leitura nova do clima.

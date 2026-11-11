@@ -13,7 +13,8 @@ import { esc, fmt, dataLonga, ICON, on, haptic, toast, sheet, el } from '../util
 import { anel, barrasHorizontais, chartRelacao } from '../charts.js';
 import { cabecalho, segmentados, vazio } from './parts.js';
 import { sheetAgua, sheetTomas, sheetRefeicao, sheetItemFarmacia } from './acoes.js';
-import { sheetRefeicaoDetalhe, sheetResumoAlimentar, sheetPrato } from './comida.js';
+import { sheetRefeicaoDetalhe, sheetResumoAlimentar, sheetPrato, repetirUltimaRefeicao } from './comida.js';
+import { sheetImportarRefeicoes } from '../importar-refeicoes.js';
 import { analisarAlimentacao } from '../nutricao.js';
 import { route, go, refresh } from '../nav.js';
 
@@ -298,7 +299,9 @@ async function seccaoComida() {
       <button class="btn btn-primary btn-block" data-acao="refeicao">${ICON.mais} Registar refeição</button>
     </div>
     <div class="btn-row mt8">
-      <button class="btn btn-sm btn-ghost btn-block" data-acao="novo-prato">${ICON.comida} Criar prato reutilizável</button>
+      <button class="btn btn-sm btn-ghost" data-acao="novo-prato">${ICON.comida} Criar prato</button>
+      <button class="btn btn-sm btn-ghost" data-acao="repetir-refeicao">${ICON.repetir} Repetir última</button>
+      <button class="btn btn-sm btn-ghost" data-acao="importar-refeicoes">${ICON.upload} MyFitnessPal</button>
     </div>
 
     ${resumoHTML}
@@ -339,6 +342,8 @@ const ACCOES = {
   agua: () => sheetAgua(HOJE()),
   refeicao: () => sheetRefeicao(),
   'novo-prato': () => sheetPrato({ aoGuardar: () => refresh() }),
+  'repetir-refeicao': () => repetirUltimaRefeicao(),
+  'importar-refeicoes': () => sheetImportarRefeicoes(),
   'resumo-alimentar': () => sheetResumoAlimentar(),
   'novo-item': () => sheetItemFarmacia(null),
 };

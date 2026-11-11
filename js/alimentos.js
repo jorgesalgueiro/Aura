@@ -11,7 +11,7 @@
    fonte e permite corrigir a quantidade ou introduzir calorias à mão.
    ========================================================================== */
 
-import { get, put, all, del, uid } from './store.js';
+import { get, put, all, del, uid, refeicoes } from './store.js';
 import { ALIMENTOS_COMUNS } from './alimentos-comuns.js';
 import { grupoPorNome, grupoDeComum, rotuloGrupo, GRUPOS_ALIMENTARES } from './nutricao.js';
 
@@ -209,6 +209,23 @@ async function locais(termo) {
 export async function sugestoes() {
   const custom = (await all('alimentoCustom').catch(() => [])).map(produtoDeCustom);
   return [...custom, ...ALIMENTOS_COMUNS.slice(0, 8).map(produtoDeComum)].slice(0, 12);
+}
+
+/** Últimos alimentos usados, para repetir com um toque. */
+export async function recentes(limite = 6) {
+  const rs = await refeicoes(21).catch(() => []);
+  const out = [], vistos = new Set();
+  for (const r of rs) {
+    for (const it of (r.itens || [])) {
+      if (!(Number(it.quantidade) > 0)) continue;
+      const k = it.codigo || `${it.nome}|${it.marca || ''}`;
+      if (vistos.has(k)) continue;
+      vistos.add(k);
+      out.push({ ...it });
+      if (out.length >= limite) return out;
+    }
+  }
+  return out;
 }
 
 /** Pesquisa só na tabela local, cache e alimentos personalizados. */

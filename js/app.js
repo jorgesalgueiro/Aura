@@ -5,9 +5,9 @@
 import { route, go, subscribe, rotaFromHash, refresh } from './nav.js';
 import {
   settings, saveSettings, exportarTudo, importarTudo, limparDadosPessoais, diaKey, isoOf,
-  semearMedicacaoComum,
+  semearMedicacaoComum, getDia, patchDia, refeicoes,
 } from './store.js';
-import { el, esc, sheet, toast, ICON, on, haptic, folhaAberta } from './utils.js';
+import { el, esc, sheet, toast, ICON, on, haptic, folhaAberta, fmt } from './utils.js';
 import { clima, atualizarClima, observarClima, estadoPill } from './clima.js';
 import { geocodar, posicaoAtual } from './weather.js';
 import { importarSaude, sheetImportar } from './health-import.js';
@@ -19,7 +19,8 @@ import { instalada, plataforma, escutarInstalacao, sheetInstalar } from './insta
 import {
   sheetExportarEncriptada, abrirCopiaEncriptada, descreverUltimaCopia,
 } from './cofre.js';
-import { sheetCrise, sheetAgua, sheetTomas, sheetDigestivo } from './screens/acoes.js';
+import { sheetCrise, sheetAgua, sheetTomas, sheetDigestivo, sheetPeso } from './screens/acoes.js';
+import { sheetRefeicao, repetirUltimaRefeicao } from './screens/comida.js';
 
 import * as Dashboard  from './screens/dashboard.js';
 import * as Sintomas   from './screens/sintomas.js';
@@ -101,6 +102,7 @@ document.addEventListener('keydown', (e) => {
     && (alvo.matches('input, textarea, select') || alvo.isContentEditable)) return;
   // com uma folha modal aberta, os números pertencem à folha (não à aba de trás)
   if (folhaAberta()) return;
+  if (e.key && e.key.toLowerCase() === 'q') { e.preventDefault(); sheetQuickAdd(); return; }
   const mapa = { '1': 'dashboard', '2': 'sintomas', '3': 'farmacia', '4': 'relatorios' };
   if (mapa[e.key]) go(mapa[e.key]);
 });
@@ -446,7 +448,60 @@ export async function sheetDefinicoes() {
   };
 }
 
+/* ------------------------------------------------------ registo rápido ----- */
+
+async function sheetQuickAdd() {
+  const s = await settings();
+  const passo = s.incrementoAguaMl;
+  const ultima = (await refeicoes(7).catch(() => []))[0] || null;
+  const corpo = el(`
+    <div>
+      <div class="grid2">
+        <button class="quick" data-q="agua"><span class="qicon">${ICON.agua}</span><span>Água · +${fmt(passo)} ml</span></button>
+        <button class="quick" data-q="toma"><span class="qicon">${ICON.pilula}</span><span>Tomar medicação</span></button>
+        <button class="quick" data-q="crise"><span class="qicon">${ICON.raio}</span><span>Iniciar crise</span></button>
+        <button class="quick" data-q="intestinal"><span class="qicon">${ICON.escama}</span><span>Registo intestinal</span></button>
+        <button class="quick" data-q="refeicao"><span class="qicon">${ICON.comida}</span><span>Refeição</span></button>
+        <button class="quick" data-q="peso"><span class="qicon">${ICON.peso}</span><span>Peso</span></button>
+      </div>
+      <button class="btn btn-sm btn-ghost btn-block mt12" data-q="repetir">
+        ${ICON.repetir} Repetir última refeição
+        <small style="display:block;font-weight:500;color:var(--text-2);margin-top:2px">${ultima ? esc((ultima.texto || 'refeição').slice(0, 50)) : 'ainda sem refeições'}</small>
+      </button>
+      <p class="hint mt12">Atalho global. No computador também abre com a tecla <b>Q</b>.</p>
+    </div>`);
+  const { fechar } = sheet({ titulo: 'Registo rápido', sub: 'A partir de qualquer ecrã', corpo });
+  const abrir = (fn) => { fechar(); setTimeout(fn, 240); };
+
+  on(corpo, 'click', '[data-q]', async (e, b) => {
+    const q = b.dataset.q;
+    if (q === 'agua') {
+      const d = await getDia(diaKey());
+      const total = d.aguaMl + passo;
+      await patchDia(diaKey(), { aguaMl: total });
+      haptic(10);
+      toast(`+${fmt(passo)} ml · ${fmt(total)} ml hoje`);
+      fechar(); refresh();
+      return;
+    }
+    if (q === 'repetir') {
+      const r = await repetirUltimaRefeicao();
+      if (r) fechar();
+      return;
+    }
+    const acoes = {
+      toma: sheetTomas, crise: sheetCrise, intestinal: sheetDigestivo,
+      refeicao: sheetRefeicao, peso: sheetPeso,
+    };
+    const fn = acoes[q];
+    if (fn) abrir(fn);
+  });
+
+  return fechar;
+}
+
 document.getElementById('btn-settings').addEventListener('click', sheetDefinicoes);
+document.getElementById('btn-quick').addEventListener('click', sheetQuickAdd);
 
 /* ---------------------------------------------------------------- boot --- */
 
